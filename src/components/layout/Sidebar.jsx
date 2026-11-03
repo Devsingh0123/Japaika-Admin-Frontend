@@ -8,7 +8,6 @@ import {
   FileText,
   Sparkles,
   ChevronLeft,
-  ChevronRight,
   ShieldCheck,
   Receipt,
   Tag,
@@ -95,14 +94,18 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
             /* When expanded: show logo & title on left, collapse button on right */
             <>
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                  <Sparkles className="size-4" />
-                </div>
-                <div className="flex flex-col truncate">
-                  <span className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
-                    Japaika
-                  </span>
-                  <span className="truncate text-[11px] text-muted-foreground">
+                <img
+                  src="/japaikaLogo.svg"
+                  alt="Japaika Logo"
+                  className="size-9 shrink-0 object-contain"
+                />
+                <div className="flex flex-col justify-center gap-0.5 truncate">
+                  <img
+                    src="/japaikaName.svg"
+                    alt="Japaika"
+                    className="h-4 w-auto object-contain object-left dark:brightness-175"
+                  />
+                  <span className="truncate text-[10px] font-medium tracking-wider uppercase text-muted-foreground">
                     Command Center
                   </span>
                 </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Sparkles, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { loginAdminThunk } from '@/features/auth/authApi'
 import { clearAuthError } from '@/features/auth/authSlice'
@@ -60,13 +60,21 @@ export function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="mb-3.5 flex size-12 items-center justify-center rounded-2xl border border-border/80 bg-card p-2.5 shadow-sm shadow-black/5 dark:shadow-black/20">
-            <Sparkles className="size-6 text-primary" />
+          <div className="mb-3.5 flex size-16 items-center justify-center rounded-2xl border border-border/80 bg-card p-2 shadow-sm shadow-black/5 dark:shadow-black/20">
+            <img
+              src="/japaikaLogo.svg"
+              alt="Japaika Logo"
+              className="size-full object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Japaika Console
+          <h1 className="flex items-center justify-center">
+            <img
+              src="/japaikaName.svg"
+              alt="Japaika Console"
+              className="h-6 w-auto object-contain dark:brightness-175"
+            />
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Enterprise administration portal. Sign in to manage platform operations.
           </p>
         </div>

@@ -39,8 +39,14 @@ export function Header({ onOpenMobileSidebar }) {
           <h1 className="text-base font-bold tracking-tight text-foreground">
             {currentNav.title}
           </h1>
-          <p className="hidden text-xs text-muted-foreground sm:block">
-            Japaika Enterprise Administration
+          <p className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+            <img
+              src="/japaikaLogo.svg"
+              alt=""
+              aria-hidden="true"
+              className="size-3.5 shrink-0 object-contain"
+            />
+            <span>Japaika Enterprise Administration</span>
           </p>
         </div>
       </div>
