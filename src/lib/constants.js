@@ -54,6 +54,18 @@ export const NAV_ITEMS = [
     badge: null,
   },
   {
+    title: 'FAQs',
+    path: '/faqs',
+    icon: 'HelpCircle',
+    badge: null,
+  },
+  {
+    title: 'Legal Pages',
+    path: '/legal-pages',
+    icon: 'Scale',
+    badge: null,
+  },
+  {
     title: 'AI Chats',
     path: '/chats',
     icon: 'MessageSquare',

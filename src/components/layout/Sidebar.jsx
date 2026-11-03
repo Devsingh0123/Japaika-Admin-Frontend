@@ -17,6 +17,8 @@ import {
   Menu,
   MessageSquare,
   Settings,
+  HelpCircle,
+  Scale,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS } from '@/lib/constants'
@@ -35,6 +37,8 @@ const ICON_MAP = {
   Tag,
   Package,
   BookOpen,
+  HelpCircle,
+  Scale,
   MessageSquare,
   ShieldCheck,
   Settings,

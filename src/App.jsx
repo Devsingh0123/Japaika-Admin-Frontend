@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { fetchAdminMeThunk } from '@/features/auth/authApi'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
@@ -15,6 +15,8 @@ import { QuestionPacksPage } from '@/pages/QuestionPacksPage'
 import { ReportPacksPage } from '@/pages/ReportPacksPage'
 import { BlogsPage } from '@/pages/BlogsPage'
 import { BlogEditorPage } from '@/pages/BlogEditorPage'
+import { FaqsPage } from '@/pages/FaqsPage'
+import { LegalPagesPage } from '@/pages/LegalPagesPage'
 import { ChatsPage } from '@/pages/ChatsPage'
 import { AdminsPage } from '@/pages/AdminsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
@@ -51,6 +53,8 @@ export default function App() {
               <Route path="blogs" element={<BlogsPage />} />
               <Route path="blogs/new" element={<BlogEditorPage />} />
               <Route path="blogs/edit/:id" element={<BlogEditorPage />} />
+              <Route path="faqs" element={<FaqsPage />} />
+              <Route path="legal-pages" element={<LegalPagesPage />} />
               <Route path="chats" element={<ChatsPage />} />
               <Route path="admins" element={<AdminsPage />} />
               <Route path="settings" element={<SettingsPage />} />

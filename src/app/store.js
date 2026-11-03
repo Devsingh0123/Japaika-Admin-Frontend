@@ -10,6 +10,8 @@ import blogsReducer from '@/features/blogs/blogsSlice'
 import reportPacksReducer from '@/features/reportPacks/reportPacksSlice'
 import chatsReducer from '@/features/chats/chatsSlice'
 import adminsReducer from '@/features/admins/adminsSlice'
+import faqsReducer from '@/features/faqs/faqsSlice'
+import legalPagesReducer from '@/features/legalPages/legalPagesSlice'
 
 export const store = configureStore({
   reducer: {
@@ -24,5 +26,7 @@ export const store = configureStore({
     blogs: blogsReducer,
     chats: chatsReducer,
     admins: adminsReducer,
+    faqs: faqsReducer,
+    legalPages: legalPagesReducer,
   },
 })
