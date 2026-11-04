@@ -230,7 +230,7 @@ export function FaqModal({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               onBlur={() => setTouched((prev) => ({ ...prev, answer: true }))}
-              placeholder="Provide a clear, helpful explanation (e.g. All charts are calculated using Swiss Ephemeris and Lahiri Ayanamsa for sub-arcsecond planetary precision.)"
+              placeholder="Provide a clear, helpful explanation (e.g. All charts are calculated using Japaika's  algorithmic calculations and Lahiri Ayanamsa for sub-arcsecond planetary precision.)"
               aria-invalid={Boolean(answerError)}
               aria-describedby={answerError ? 'faq-answer-error' : undefined}
               className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm text-foreground leading-relaxed outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 resize-y"
