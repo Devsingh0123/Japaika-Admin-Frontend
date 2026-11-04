@@ -1,15 +1,12 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
 import api from '@/lib/api'
 
-/**
- * Fetch paginated staff administrators
- */
 export const fetchAdminsThunk = createAsyncThunk(
   'admins/fetchAdmins',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/admins', { params })
-      return response.data?.data || response.data
+      const { data } = await api.get('/admins', { params })
+      return data.data
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to fetch staff administrators.'
@@ -18,32 +15,41 @@ export const fetchAdminsThunk = createAsyncThunk(
   }
 )
 
-/**
- * Create a new staff administrator (Super Admin only)
- */
-export const createAdminThunk = createAsyncThunk(
-  'admins/createAdmin',
-  async (adminData, { rejectWithValue }) => {
+export const fetchPermissionsThunk = createAsyncThunk(
+  'admins/fetchPermissions',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await api.post('/admins', adminData)
-      return response.data?.data?.admin || response.data?.data || response.data
+      const { data } = await api.get('/admins/permissions')
+      return data.data.permissions
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to create administrator account.'
+        error.response?.data?.message || 'Failed to fetch permissions.'
       )
     }
   }
 )
 
-/**
- * Update an administrator role (promote/demote between admin & super_admin)
- */
+export const createAdminThunk = createAsyncThunk(
+  'admins/createAdmin',
+  async (adminData, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post('/admins', adminData)
+      return data.data.admin
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          'Failed to create administrator account.'
+      )
+    }
+  }
+)
+
 export const updateAdminRoleThunk = createAsyncThunk(
   'admins/updateAdminRole',
   async ({ id, role }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/admins/${id}/role`, { role })
-      return response.data?.data?.admin || response.data?.data || response.data
+      const { data } = await api.patch(`/admins/${id}/role`, { role })
+      return data.data.admin
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update administrator role.'
@@ -52,35 +58,48 @@ export const updateAdminRoleThunk = createAsyncThunk(
   }
 )
 
-/**
- * Suspend or activate administrator account
- */
-export const updateAdminStatusThunk = createAsyncThunk(
-  'admins/updateAdminStatus',
-  async ({ id, is_blocked }, { rejectWithValue }) => {
+export const updateAdminPermissionsThunk = createAsyncThunk(
+  'admins/updateAdminPermissions',
+  async ({ id, permissions }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/admins/${id}/status`, { is_blocked })
-      return response.data?.data?.admin || response.data?.data || response.data
+      const { data } = await api.patch(`/admins/${id}/permissions`, {
+        permissions,
+      })
+      return data.data.admin
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to update administrator status.'
+        error.response?.data?.message ||
+          'Failed to update administrator permissions.'
       )
     }
   }
 )
 
-/**
- * Delete administrator account (Super Admin only)
- */
+export const updateAdminStatusThunk = createAsyncThunk(
+  'admins/updateAdminStatus',
+  async ({ id, is_blocked }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(`/admins/${id}/status`, { is_blocked })
+      return data.data.admin
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          'Failed to update administrator status.'
+      )
+    }
+  }
+)
+
 export const deleteAdminThunk = createAsyncThunk(
   'admins/deleteAdmin',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`/admins/${id}`)
-      return { id, ...(response.data?.data || {}) }
+      const { data } = await api.delete(`/admins/${id}`)
+      return data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to delete administrator account.'
+        error.response?.data?.message ||
+          'Failed to delete administrator account.'
       )
     }
   }

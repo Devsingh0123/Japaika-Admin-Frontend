@@ -44,25 +44,114 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<DashboardPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="orders" element={<OrdersPage />} />
-              <Route path="coupons" element={<CouponsPage />} />
-              <Route path="question-packs" element={<QuestionPacksPage />} />
-              <Route path="report-packs" element={<ReportPacksPage />} />
-              <Route path="blogs" element={<BlogsPage />} />
-              <Route path="blogs/new" element={<BlogEditorPage />} />
-              <Route path="blogs/edit/:id" element={<BlogEditorPage />} />
-              <Route path="faqs" element={<FaqsPage />} />
-              <Route path="legal-pages" element={<LegalPagesPage />} />
-              <Route path="chats" element={<ChatsPage />} />
-              <Route path="admins" element={<AdminsPage />} />
+              <Route
+                index
+                element={
+                  <ProtectedRoute permission="dashboard:read">
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="users"
+                element={
+                  <ProtectedRoute permission="users:read">
+                    <UsersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="orders"
+                element={
+                  <ProtectedRoute permission="orders:read">
+                    <OrdersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="coupons"
+                element={
+                  <ProtectedRoute permission="coupons:read">
+                    <CouponsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="question-packs"
+                element={
+                  <ProtectedRoute permission="question_packs:read">
+                    <QuestionPacksPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="report-packs"
+                element={
+                  <ProtectedRoute permission="report_packs:read">
+                    <ReportPacksPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="blogs"
+                element={
+                  <ProtectedRoute permission="blogs:read">
+                    <BlogsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="blogs/new"
+                element={
+                  <ProtectedRoute permission="blogs:write">
+                    <BlogEditorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="blogs/edit/:id"
+                element={
+                  <ProtectedRoute permission="blogs:write">
+                    <BlogEditorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="faqs"
+                element={
+                  <ProtectedRoute permission="faqs:read">
+                    <FaqsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="legal-pages"
+                element={
+                  <ProtectedRoute permission="legal_pages:read">
+                    <LegalPagesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="chats"
+                element={
+                  <ProtectedRoute permission="chats:read">
+                    <ChatsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admins"
+                element={
+                  <ProtectedRoute permission="admins:read">
+                    <AdminsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="settings" element={<SettingsPage />} />
-              {/* Internal 404 rendered inside AdminLayout */}
               <Route path="*" element={<NotFoundPage />} />
             </Route>
 
-            {/* Standalone 404 for unauthenticated or external route errors */}
             <Route path="/404" element={<NotFoundPage standalone />} />
             <Route path="*" element={<NotFoundPage standalone />} />
           </Routes>

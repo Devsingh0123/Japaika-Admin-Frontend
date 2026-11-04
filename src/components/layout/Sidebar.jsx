@@ -3,10 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
-  CreditCard,
-  DollarSign,
   FileText,
-  Sparkles,
   ChevronLeft,
   ShieldCheck,
   Receipt,
@@ -21,7 +18,7 @@ import {
   Scale,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { NAV_ITEMS } from '@/lib/constants'
+import { NAV_ITEMS, hasPermission } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { logoutAdminThunk } from '@/features/auth/authApi'
 import { toast } from 'sonner'
@@ -29,10 +26,7 @@ import { toast } from 'sonner'
 const ICON_MAP = {
   LayoutDashboard,
   Users,
-  CreditCard,
-  DollarSign,
   FileText,
-  Sparkles,
   Receipt,
   Tag,
   Package,
@@ -44,9 +38,18 @@ const ICON_MAP = {
   Settings,
 }
 
-export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
+export function Sidebar({
+  isCollapsed,
+  onToggleCollapse,
+  mobileOpen,
+  onCloseMobile,
+}) {
   const dispatch = useDispatch()
   const { admin } = useSelector((state) => state.auth)
+
+  const visibleNavItems = NAV_ITEMS.filter((item) =>
+    hasPermission(admin, item.permission)
+  )
 
   const handleLogout = async () => {
     await dispatch(logoutAdminThunk())
@@ -60,7 +63,6 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-xs lg:hidden"
@@ -83,7 +85,6 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
           )}
         >
           {isCollapsed ? (
-            /* When collapsed: hide logo, menu toggle button takes place of logo */
             <Button
               variant="ghost"
               size="icon-sm"
@@ -95,7 +96,6 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
               <Menu className="size-4.5" />
             </Button>
           ) : (
-            /* When expanded: show logo & title on left, collapse button on right */
             <>
               <div className="flex items-center gap-2.5 overflow-hidden">
                 <img
@@ -131,7 +131,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
 
         {/* Navigation Links */}
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = ICON_MAP[item.icon] || LayoutDashboard
             return (
               <NavLink
@@ -152,14 +152,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
               >
                 <Icon className="size-4 shrink-0" />
                 {!isCollapsed && (
-                  <>
-                    <span className="flex-1 truncate">{item.title}</span>
-                    {item.badge && (
-                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
+                  <span className="flex-1 truncate">{item.title}</span>
                 )}
               </NavLink>
             )
@@ -170,7 +163,6 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
         <div className="border-t border-sidebar-border p-3">
           {!isCollapsed ? (
             <div className="group relative flex items-center justify-between rounded-xl border border-sidebar-border/80 bg-sidebar-accent/25 p-2 transition-all hover:border-sidebar-border hover:bg-sidebar-accent/50 shadow-2xs">
-              {/* User Avatar + Metadata */}
               <NavLink
                 to="/settings"
                 onClick={onCloseMobile}
@@ -210,12 +202,13 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
                       {roleLabel}
                     </span>
                     <span>•</span>
-                    <span className="truncate">{admin?.name ? adminEmail : 'Online'}</span>
+                    <span className="truncate">
+                      {admin?.name ? adminEmail : 'Online'}
+                    </span>
                   </div>
                 </div>
               </NavLink>
 
-              {/* Integrated Sign Out Button */}
               <button
                 type="button"
                 onClick={handleLogout}
@@ -227,7 +220,6 @@ export function Sidebar({ isCollapsed, onToggleCollapse, mobileOpen, onCloseMobi
               </button>
             </div>
           ) : (
-            /* Collapsed Mode */
             <div className="flex flex-col items-center gap-2">
               {admin?.avatar_url ? (
                 <div className="relative size-8" title={adminName}>

@@ -17,7 +17,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  const from = location.state?.from?.pathname || '/users'
+  const from = location.state?.from?.pathname || '/'
 
   if (isAuthenticated) {
     return <Navigate to={from} replace />

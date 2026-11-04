@@ -6,19 +6,14 @@ export const fetchCouponsThunk = createAsyncThunk(
   async ({ search = '', is_active } = {}, { rejectWithValue }) => {
     try {
       const params = {}
-      if (search && search.trim()) {
-        params.search = search.trim()
-      }
-      if (is_active !== undefined && is_active !== 'all' && is_active !== '') {
-        params.is_active = is_active
-      }
+      if (search.trim()) params.search = search.trim()
+      if (is_active && is_active !== 'all') params.is_active = is_active
+
       const { data } = await api.get('/coupons', { params })
-      return data?.data?.coupons || []
+      return data.data.coupons
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to retrieve coupons list.'
+        error.response?.data?.message || 'Failed to fetch coupons.'
       )
     }
   }
@@ -29,12 +24,24 @@ export const createCouponThunk = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const { data } = await api.post('/coupons', payload)
-      return data?.data?.coupon || data?.data
+      return data.data.coupon
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to create coupon.'
+        error.response?.data?.message || 'Failed to create coupon.'
+      )
+    }
+  }
+)
+
+export const updateCouponThunk = createAsyncThunk(
+  'coupons/updateCoupon',
+  async ({ id, payload }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.patch(`/coupons/${id}`, payload)
+      return data.data.coupon
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update coupon.'
       )
     }
   }
@@ -44,14 +51,25 @@ export const toggleCouponStatusThunk = createAsyncThunk(
   'coupons/toggleStatus',
   async ({ id, is_active }, { rejectWithValue }) => {
     try {
-      const body = is_active !== undefined ? { is_active } : {}
-      const { data } = await api.patch(`/coupons/${id}/status`, body)
-      return data?.data || { id, is_active }
+      const { data } = await api.patch(`/coupons/${id}/status`, { is_active })
+      return data.data
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to update coupon status.'
+        error.response?.data?.message || 'Failed to update coupon status.'
+      )
+    }
+  }
+)
+
+export const deleteCouponThunk = createAsyncThunk(
+  'coupons/deleteCoupon',
+  async (id, { rejectWithValue }) => {
+    try {
+      const { data } = await api.delete(`/coupons/${id}`)
+      return data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete coupon.'
       )
     }
   }

@@ -1,30 +1,31 @@
 import { createSlice } from '@reduxjs/toolkit'
 import {
   fetchAdminsThunk,
+  fetchPermissionsThunk,
   createAdminThunk,
   updateAdminRoleThunk,
+  updateAdminPermissionsThunk,
   updateAdminStatusThunk,
   deleteAdminThunk,
 } from './adminsApi'
 
-const initialState = {
-  admins: [],
-  pagination: {
-    total: 0,
-    page: 1,
-    limit: 20,
-    totalPages: 1,
-  },
-  loadingList: false,
-  submitting: false,
-  togglingId: null,
-  deletingId: null,
-  error: null,
-}
-
 const adminsSlice = createSlice({
   name: 'admins',
-  initialState,
+  initialState: {
+    admins: [],
+    availablePermissions: [],
+    pagination: {
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 1,
+    },
+    loadingList: false,
+    submitting: false,
+    togglingId: null,
+    deletingId: null,
+    error: null,
+  },
   reducers: {
     clearAdminsError: (state) => {
       state.error = null
@@ -32,63 +33,69 @@ const adminsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchAdminsThunk
       .addCase(fetchAdminsThunk.pending, (state) => {
         state.loadingList = true
         state.error = null
       })
       .addCase(fetchAdminsThunk.fulfilled, (state, action) => {
         state.loadingList = false
-        state.admins = action.payload?.admins || []
-        if (action.payload?.pagination) {
-          state.pagination = action.payload.pagination
-        }
+        state.admins = action.payload.admins
+        state.pagination = action.payload.pagination
       })
       .addCase(fetchAdminsThunk.rejected, (state, action) => {
         state.loadingList = false
         state.error = action.payload
       })
 
-      // createAdminThunk
+      .addCase(fetchPermissionsThunk.fulfilled, (state, action) => {
+        state.availablePermissions = action.payload
+      })
+
       .addCase(createAdminThunk.pending, (state) => {
         state.submitting = true
         state.error = null
       })
       .addCase(createAdminThunk.fulfilled, (state, action) => {
         state.submitting = false
-        if (action.payload) {
-          state.admins.unshift(action.payload)
-          state.pagination.total += 1
-        }
+        state.admins.unshift(action.payload)
+        state.pagination.total += 1
       })
       .addCase(createAdminThunk.rejected, (state, action) => {
         state.submitting = false
         state.error = action.payload
       })
 
-      // updateAdminRoleThunk
       .addCase(updateAdminRoleThunk.fulfilled, (state, action) => {
-        const updated = action.payload
-        if (updated?.id) {
-          const idx = state.admins.findIndex((a) => a.id === updated.id)
-          if (idx !== -1) {
-            state.admins[idx] = { ...state.admins[idx], ...updated }
-          }
+        const idx = state.admins.findIndex((a) => a.id === action.payload.id)
+        if (idx !== -1) {
+          state.admins[idx] = { ...state.admins[idx], ...action.payload }
         }
       })
 
-      // updateAdminStatusThunk
+      .addCase(updateAdminPermissionsThunk.pending, (state) => {
+        state.submitting = true
+        state.error = null
+      })
+      .addCase(updateAdminPermissionsThunk.fulfilled, (state, action) => {
+        state.submitting = false
+        const idx = state.admins.findIndex((a) => a.id === action.payload.id)
+        if (idx !== -1) {
+          state.admins[idx] = { ...state.admins[idx], ...action.payload }
+        }
+      })
+      .addCase(updateAdminPermissionsThunk.rejected, (state, action) => {
+        state.submitting = false
+        state.error = action.payload
+      })
+
       .addCase(updateAdminStatusThunk.pending, (state, action) => {
         state.togglingId = action.meta.arg.id
       })
       .addCase(updateAdminStatusThunk.fulfilled, (state, action) => {
         state.togglingId = null
-        const updated = action.payload
-        if (updated?.id) {
-          const idx = state.admins.findIndex((a) => a.id === updated.id)
-          if (idx !== -1) {
-            state.admins[idx] = { ...state.admins[idx], ...updated }
-          }
+        const idx = state.admins.findIndex((a) => a.id === action.payload.id)
+        if (idx !== -1) {
+          state.admins[idx] = { ...state.admins[idx], ...action.payload }
         }
       })
       .addCase(updateAdminStatusThunk.rejected, (state, action) => {
@@ -96,7 +103,6 @@ const adminsSlice = createSlice({
         state.error = action.payload
       })
 
-      // deleteAdminThunk
       .addCase(deleteAdminThunk.pending, (state, action) => {
         state.deletingId = action.meta.arg
       })

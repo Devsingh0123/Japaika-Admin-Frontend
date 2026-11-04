@@ -1,7 +1,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
@@ -38,10 +37,12 @@ export function DeleteAdminDialog({
         <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 text-xs space-y-1.5 text-muted-foreground">
           <p>
             Are you sure you want to remove administrator{' '}
-            <strong className="text-foreground">{admin.email}</strong> ({admin.name})?
+            <strong className="text-foreground">{admin.email}</strong> (
+            {admin.name})?
           </p>
           <p className="text-[11px] text-destructive">
-            This account will lose all administrative dashboard access immediately.
+            This account will lose all administrative dashboard access
+            immediately.
           </p>
         </div>
 

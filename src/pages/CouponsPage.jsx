@@ -4,6 +4,7 @@ import {
   fetchCouponsThunk,
   toggleCouponStatusThunk,
 } from '@/features/coupons/couponsApi'
+import { fetchPacksThunk } from '@/features/packs/packsApi'
 import {
   Table,
   TableBody,
@@ -17,6 +18,8 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateCouponModal } from '@/components/coupons/CreateCouponModal'
+import { DeleteCouponDialog } from '@/components/coupons/DeleteCouponDialog'
+import { parseArray } from '@/lib/constants'
 import {
   Tag,
   Plus,
@@ -31,6 +34,8 @@ import {
   XCircle,
   Sparkles,
   Filter,
+  Edit2,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -42,53 +47,25 @@ const STATUS_FILTERS = [
 
 function formatDiscount(type, value) {
   const val = Number(value)
-  if (type === 'percentage') {
-    return `${val}% OFF`
-  }
-  if (type === 'flat') {
-    return `₹${val.toFixed(2)} OFF`
-  }
+  if (type === 'percentage') return `${val}% OFF`
+  if (type === 'flat') return `₹${val.toFixed(2)} OFF`
   return `Special Deal (${val})`
 }
 
 function formatExpiry(dateStr) {
   if (!dateStr) return 'Never'
-  try {
-    const expDate = new Date(dateStr)
-    const isPast = expDate.getTime() < Date.now()
-    return (
-      <span className={isPast ? 'text-rose-500 font-medium' : ''}>
-        {expDate.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })}
-        {isPast && ' (Expired)'}
-      </span>
-    )
-  } catch {
-    return dateStr
-  }
-}
-
-function parseApplicableProducts(products) {
-  if (!products) return []
-  if (Array.isArray(products)) return products
-  if (typeof products === 'string') {
-    const trimmed = products.trim()
-    if (!trimmed || trimmed === '[]' || trimmed === '""') return []
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (Array.isArray(parsed)) return parsed
-      if (typeof parsed === 'string' && parsed.trim()) return [parsed.trim()]
-    } catch {
-      return trimmed
-        .split(',')
-        .map((s) => s.trim().replace(/^["']|["']$/g, ''))
-        .filter(Boolean)
-    }
-  }
-  return []
+  const expDate = new Date(dateStr)
+  const isPast = expDate.getTime() < Date.now()
+  return (
+    <span className={isPast ? 'text-rose-500 font-medium' : ''}>
+      {expDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })}
+      {isPast && ' (Expired)'}
+    </span>
+  )
 }
 
 export function CouponsPage() {
@@ -96,14 +73,32 @@ export function CouponsPage() {
   const { coupons, loadingList, togglingId } = useSelector(
     (state) => state.coupons
   )
+  const { packs } = useSelector((state) => state.packs)
 
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [couponToEdit, setCouponToEdit] = useState(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [couponToDelete, setCouponToDelete] = useState(null)
   const [copiedCode, setCopiedCode] = useState(null)
 
-  // Debounce search
+  const handleOpenCreate = () => {
+    setCouponToEdit(null)
+    setCreateModalOpen(true)
+  }
+
+  const handleOpenEdit = (coupon) => {
+    setCouponToEdit(coupon)
+    setCreateModalOpen(true)
+  }
+
+  const handleOpenDelete = (coupon) => {
+    setCouponToDelete(coupon)
+    setDeleteDialogOpen(true)
+  }
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchInput)
@@ -118,6 +113,7 @@ export function CouponsPage() {
         is_active: statusFilter,
       })
     )
+    dispatch(fetchPacksThunk())
   }, [dispatch, debouncedSearch, statusFilter])
 
   useEffect(() => {
@@ -125,7 +121,6 @@ export function CouponsPage() {
   }, [loadCoupons])
 
   const handleCopy = (code) => {
-    if (!code) return
     navigator.clipboard.writeText(code)
     setCopiedCode(code)
     toast.success(`Coupon code "${code}" copied`)
@@ -138,23 +133,22 @@ export function CouponsPage() {
       toggleCouponStatusThunk({ id: coupon.id, is_active: nextStatus })
     )
 
-    if (toggleCouponStatusThunk.fulfilled.match(result)) {
+    if (result.meta.requestStatus === 'fulfilled') {
       toast.success(
-        nextStatus
-          ? `Coupon "${coupon.code}" activated.`
-          : `Coupon "${coupon.code}" deactivated.`
+        `Coupon "${coupon.code}" ${nextStatus ? 'activated' : 'deactivated'}.`
       )
     } else {
-      toast.error(result.payload || 'Failed to update coupon status.')
+      toast.error(result.payload)
     }
   }
 
-  // Summary counts
-  const couponList = Array.isArray(coupons) ? coupons : []
-  const totalCoupons = couponList.length
-  const activeCount = couponList.filter((c) => Boolean(c.is_active)).length
+  const totalCoupons = coupons.length
+  const activeCount = coupons.filter((c) => c.is_active).length
   const inactiveCount = totalCoupons - activeCount
-  const totalRedemptions = couponList.reduce((sum, c) => sum + (Number(c.used_count) || 0), 0)
+  const totalRedemptions = coupons.reduce(
+    (sum, c) => sum + (Number(c.used_count) || 0),
+    0
+  )
 
   return (
     <div className="space-y-7">
@@ -186,7 +180,7 @@ export function CouponsPage() {
 
           <Button
             size="sm"
-            onClick={() => setCreateModalOpen(true)}
+            onClick={handleOpenCreate}
             className="gap-2 h-9.5 px-4 rounded-xl shadow-xs font-semibold"
           >
             <Plus className="size-4" />
@@ -204,7 +198,9 @@ export function CouponsPage() {
               <Tag className="size-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-foreground font-mono">{totalCoupons}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-foreground font-mono">
+            {totalCoupons}
+          </p>
           <p className="text-xs text-muted-foreground">Configured vouchers</p>
         </div>
 
@@ -250,7 +246,6 @@ export function CouponsPage() {
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
-        {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="size-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -262,7 +257,6 @@ export function CouponsPage() {
           />
         </div>
 
-        {/* Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1.5 font-medium">
             <Filter className="size-3.5" />
@@ -310,6 +304,9 @@ export function CouponsPage() {
               <TableHead className="text-center font-semibold text-xs text-foreground uppercase tracking-wider w-[120px]">
                 Status / Toggle
               </TableHead>
+              <TableHead className="text-right font-semibold text-xs text-foreground uppercase tracking-wider w-[110px]">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -337,11 +334,14 @@ export function CouponsPage() {
                   <TableCell className="text-center">
                     <Skeleton className="h-5 w-10 mx-auto rounded-full" />
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-8 w-18 ml-auto rounded-lg" />
+                  </TableCell>
                 </TableRow>
               ))
-            ) : couponList.length === 0 ? (
+            ) : coupons.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-44 text-center">
+                <TableCell colSpan={8} className="h-44 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
                     <Tag className="w-8 h-8 opacity-40" />
                     <p className="text-sm font-medium">No coupons found.</p>
@@ -352,9 +352,9 @@ export function CouponsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              couponList.map((coupon) => {
+              coupons.map((coupon) => {
                 const isToggling = togglingId === coupon.id
-                const maxUsesText = coupon.max_uses ? coupon.max_uses : '∞'
+                const maxUsesText = coupon.max_uses || '∞'
                 const usagePercent = coupon.max_uses
                   ? Math.min(
                       100,
@@ -397,7 +397,9 @@ export function CouponsPage() {
                         ) : (
                           <Gift className="w-3.5 h-3.5 text-amber-500" />
                         )}
-                        <span>{formatDiscount(coupon.discount_type, coupon.discount_value)}</span>
+                        <span>
+                          {formatDiscount(coupon.discount_type, coupon.discount_value)}
+                        </span>
                       </div>
                     </TableCell>
 
@@ -409,23 +411,23 @@ export function CouponsPage() {
                     {/* Applies To */}
                     <TableCell>
                       {(() => {
-                        const productList = parseApplicableProducts(coupon.applicable_products)
-                        if (productList.length > 0) {
-                          return (
-                            <div className="flex flex-wrap gap-1 max-w-[180px]">
-                              {productList.map((p, idx) => (
+                        const codes = parseArray(coupon.applicable_products)
+                        return codes.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[180px]">
+                            {codes.map((code) => {
+                              const pack = packs.find((p) => p.code === code)
+                              return (
                                 <Badge
-                                  key={typeof p === 'string' ? p : idx}
+                                  key={code}
                                   variant="outline"
                                   className="text-[10px] font-mono px-1.5 py-0"
                                 >
-                                  {String(p)}
+                                  {pack ? `${pack.name} (${pack.credits}Q)` : code}
                                 </Badge>
-                              ))}
-                            </div>
-                          )
-                        }
-                        return (
+                              )
+                            })}
+                          </div>
+                        ) : (
                           <span className="text-xs text-muted-foreground font-medium">
                             All Packs
                           </span>
@@ -462,6 +464,7 @@ export function CouponsPage() {
                           checked={Boolean(coupon.is_active)}
                           onCheckedChange={() => handleToggleStatus(coupon)}
                           disabled={isToggling}
+                          aria-label={`Toggle active status for ${coupon.code}`}
                           className="data-[state=checked]:bg-emerald-500"
                         />
                         <span
@@ -475,6 +478,32 @@ export function CouponsPage() {
                         </span>
                       </div>
                     </TableCell>
+
+                    {/* Edit & Delete Actions */}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => handleOpenEdit(coupon)}
+                          className="size-8 rounded-lg border-border/70 text-muted-foreground hover:text-primary hover:border-primary/40"
+                          title="Edit coupon"
+                          aria-label={`Edit coupon ${coupon.code}`}
+                        >
+                          <Edit2 className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => handleOpenDelete(coupon)}
+                          className="size-8 rounded-lg border-border/70 text-muted-foreground hover:text-destructive hover:border-destructive/40"
+                          title="Delete coupon"
+                          aria-label={`Delete coupon ${coupon.code}`}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 )
               })
@@ -483,10 +512,19 @@ export function CouponsPage() {
         </Table>
       </div>
 
-      {/* Create Coupon Modal Form */}
+      {/* Create / Edit Coupon Modal Form */}
       <CreateCouponModal
+        key={couponToEdit?.id || `create-${createModalOpen}`}
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
+        couponToEdit={couponToEdit}
+      />
+
+      {/* Delete Coupon Confirmation Dialog */}
+      <DeleteCouponDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        coupon={couponToDelete}
       />
     </div>
   )

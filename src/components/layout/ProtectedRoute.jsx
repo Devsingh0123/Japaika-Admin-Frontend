@@ -1,9 +1,12 @@
 import { useSelector } from 'react-redux'
 import { Navigate, useLocation } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ShieldAlert } from 'lucide-react'
+import { NAV_ITEMS, hasPermission } from '@/lib/constants'
 
-export function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useSelector((state) => state.auth)
+export function ProtectedRoute({ children, permission }) {
+  const { isAuthenticated, isLoading, admin } = useSelector(
+    (state) => state.auth
+  )
   const location = useLocation()
 
   if (isLoading) {
@@ -19,6 +22,30 @@ export function ProtectedRoute({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  if (permission && !hasPermission(admin, permission)) {
+    if (location.pathname === '/') {
+      const fallbackRoute =
+        NAV_ITEMS.find(
+          (item) => item.path !== '/' && hasPermission(admin, item.permission)
+        )?.path || '/settings'
+      return <Navigate to={fallbackRoute} replace />
+    }
+
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center p-6">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive border border-destructive/20">
+          <ShieldAlert className="size-6" />
+        </div>
+        <h2 className="text-lg font-bold text-foreground">Access Restricted</h2>
+        <p className="max-w-md text-xs text-muted-foreground">
+          Your account does not have the required permission (
+          <code className="font-mono text-foreground">{permission}</code>) to
+          access this module. Contact a Super Admin to request access.
+        </p>
+      </div>
+    )
   }
 
   return children
