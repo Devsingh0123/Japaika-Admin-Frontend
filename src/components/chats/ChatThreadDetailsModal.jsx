@@ -28,6 +28,15 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+const TOPIC_STYLES = {
+  career: 'border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-indigo-500/10',
+  marriage: 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
+  love: 'border-rose-500/30 text-rose-600 dark:text-rose-400 bg-rose-500/10',
+  wealth: 'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10',
+  health: 'border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/10',
+  general: 'border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10',
+}
+
 export function ChatThreadDetailsModal({ open, onOpenChange, thread, loading }) {
   const [copiedTranscript, setCopiedTranscript] = useState(false)
   const [expandedThinkingMap, setExpandedThinkingMap] = useState({})
@@ -54,7 +63,12 @@ export function ChatThreadDetailsModal({ open, onOpenChange, thread, loading }) 
 
     const messages = thread.messages || []
     messages.forEach((m, idx) => {
-      const roleTitle = m.role === 'user' ? 'USER' : `AI (${thread.engine?.toUpperCase() || 'ASSISTANT'})`
+      const roleTitle =
+        m.role === 'user'
+          ? m.topic
+            ? `USER [Topic: ${m.topic}]`
+            : 'USER'
+          : `AI (${thread.engine?.toUpperCase() || 'ASSISTANT'})`
       lines.push(`[${idx + 1}] ${roleTitle} (${m.created_at || ''})`)
       lines.push(`${m.content || ''}`)
       if (m.structured_data?.suggestedQuestions?.length) {
@@ -230,6 +244,17 @@ export function ChatThreadDetailsModal({ open, onOpenChange, thread, loading }) 
                             <User className="size-3" />
                           </div>
                           <span className="text-foreground">User Prompt</span>
+                          {m.topic && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 font-medium ${
+                                TOPIC_STYLES[m.topic.toLowerCase()] ||
+                                'border-primary/30 text-primary bg-primary/10'
+                              }`}
+                            >
+                              {m.topic}
+                            </Badge>
+                          )}
                         </>
                       ) : (
                         <>
