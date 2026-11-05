@@ -10,22 +10,18 @@ import {
 } from 'lucide-react'
 
 function formatCurrency(amount, currency = 'INR') {
-  if (amount === undefined || amount === null) return '—'
-  const num = Number(amount)
-  if (isNaN(num)) return amount
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: currency || 'INR',
     maximumFractionDigits: 2,
-  }).format(num)
+  }).format(Number(amount) || 0)
 }
 
 function formatNumber(num) {
-  if (num === undefined || num === null) return '0'
-  return new Intl.NumberFormat('en-IN').format(Number(num))
+  return new Intl.NumberFormat('en-IN').format(Number(num) || 0)
 }
 
-export function MetricCards({ metrics, loading }) {
+export function MetricCards({ metrics, loading = false }) {
   if (loading && !metrics) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -48,7 +44,7 @@ export function MetricCards({ metrics, loading }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {/* 1. Total Revenue Card */}
-      <Card className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow group">
+      <Card className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur-sm shadow-xs hover:shadow-md transition-shadow group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
         <CardContent className="p-6">
           <div className="flex items-center justify-between pb-3">
@@ -89,7 +85,7 @@ export function MetricCards({ metrics, loading }) {
       </Card>
 
       {/* 2. Total Paid Orders Card */}
-      <Card className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow group">
+      <Card className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur-sm shadow-xs hover:shadow-md transition-shadow group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
         <CardContent className="p-6">
           <div className="flex items-center justify-between pb-3">
@@ -108,14 +104,14 @@ export function MetricCards({ metrics, loading }) {
 
             <p className="text-xs text-muted-foreground pt-1 flex items-center gap-1.5">
               <Sparkles className="size-3.5 text-primary" />
-              <span>Fulfilled orders & credit grant completions</span>
+              <span>Fulfilled orders &amp; credit grant completions</span>
             </p>
           </div>
         </CardContent>
       </Card>
 
       {/* 3. Total Users Card */}
-      <Card className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow group">
+      <Card className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur-sm shadow-xs hover:shadow-md transition-shadow group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
         <CardContent className="p-6">
           <div className="flex items-center justify-between pb-3">

@@ -29,6 +29,10 @@ import {
   Loader2,
   AlertCircle,
   Save,
+  EyeOff,
+  Globe,
+  Share2,
+  Copy,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -91,6 +95,7 @@ export function CreateCouponModal({
   )
   const [maxUses, setMaxUses] = useState(couponToEdit?.max_uses ?? '')
   const [isActive, setIsActive] = useState(couponToEdit?.is_active ?? true)
+  const [isHidden, setIsHidden] = useState(couponToEdit?.is_hidden ?? false)
   const [validationError, setValidationError] = useState('')
 
   const handleClose = () => {
@@ -148,6 +153,7 @@ export function CreateCouponModal({
       applicable_products: validPackCodes,
       max_uses: maxUses ? Number(maxUses) : null,
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+      is_hidden: isHidden,
       ...(isEditMode && { is_active: isActive }),
     }
 
@@ -407,6 +413,58 @@ export function CreateCouponModal({
                 ? 'Applies to all packs by default.'
                 : `Applies to ${applicableProducts.length} selected pack(s).`}
             </p>
+          </div>
+
+          {/* Visibility / Distribution Mode */}
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5 pr-4">
+                <Label
+                  htmlFor="coupon-hidden-switch"
+                  className="text-xs font-semibold text-foreground cursor-pointer flex items-center gap-1.5"
+                >
+                  {isHidden ? (
+                    <EyeOff className="size-3.5 text-purple-500" />
+                  ) : (
+                    <Globe className="size-3.5 text-emerald-500" />
+                  )}
+                  Secret / Hidden Coupon (Personal Distribution)
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {isHidden
+                    ? 'Hidden from public storefront banners. Only users with the direct link or manual code can redeem it.'
+                    : 'Publicly discoverable on pricing pages and coupon banners.'}
+                </p>
+              </div>
+              <Switch
+                id="coupon-hidden-switch"
+                checked={isHidden}
+                onCheckedChange={setIsHidden}
+                className="data-[state=checked]:bg-purple-600"
+              />
+            </div>
+
+            {isEditMode && couponToEdit?.share_url && (
+              <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2 text-xs">
+                <div className="min-w-0 flex-1 flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground bg-background/60 px-2.5 py-1.5 rounded-lg border border-border/60 truncate">
+                  <Share2 className="size-3 shrink-0 text-primary" />
+                  <span className="truncate">{couponToEdit.share_url}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(couponToEdit.share_url)
+                    toast.success('Direct share link copied to clipboard')
+                  }}
+                  className="shrink-0 gap-1 rounded-lg text-[11px] h-7 px-2.5"
+                >
+                  <Copy className="size-3" />
+                  Copy Link
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Active Status Toggle in Edit Mode */}

@@ -9,27 +9,30 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Calendar,
-  TrendingUp,
-} from 'lucide-react'
+import { Calendar, TrendingUp } from 'lucide-react'
+
+const RANGE_OPTIONS = [
+  { label: '7D', value: 7 },
+  { label: '14D', value: 14 },
+  { label: '30D', value: 30 },
+  { label: '90D', value: 90 },
+]
 
 function formatCompactINR(val) {
-  if (val === undefined || val === null || isNaN(Number(val))) return '₹0'
-  const num = Number(val)
-  if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)}Cr`
-  if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`
-  if (num >= 1000) return `₹${(num / 1000).toFixed(1)}k`
-  return `₹${num}`
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(Number(val) || 0)
 }
 
 function formatFullINR(val) {
-  if (val === undefined || val === null || isNaN(Number(val))) return '₹0.00'
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 2,
-  }).format(Number(val))
+  }).format(Number(val) || 0)
 }
 
 function CustomTooltip({ active, payload }) {
@@ -64,10 +67,15 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export function RevenueAreaChart({ chartData = [], loading = false }) {
+export function RevenueAreaChart({
+  chartData = [],
+  chartDays = 7,
+  onDaysChange,
+  loading = false,
+}) {
   if (loading && (!chartData || chartData.length === 0)) {
     return (
-      <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-sm">
+      <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-xs h-full flex flex-col justify-between">
         <CardHeader className="space-y-2">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-72" />
@@ -79,45 +87,68 @@ export function RevenueAreaChart({ chartData = [], loading = false }) {
     )
   }
 
-  // Calculate 7-day stats
-  const total7DayRevenue = chartData.reduce((acc, d) => acc + (Number(d.revenue) || 0), 0)
-  const total7DayOrders = chartData.reduce((acc, d) => acc + (Number(d.ordersCount) || 0), 0)
-  const avgDailyRevenue = chartData.length > 0 ? total7DayRevenue / chartData.length : 0
+  const totalPeriodRevenue = chartData.reduce(
+    (acc, d) => acc + (Number(d.revenue) || 0),
+    0
+  )
+  const totalPeriodOrders = chartData.reduce(
+    (acc, d) => acc + (Number(d.ordersCount) || 0),
+    0
+  )
+  const avgDailyRevenue =
+    chartData.length > 0 ? totalPeriodRevenue / chartData.length : 0
 
   return (
-    <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
+    <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-xs h-full flex flex-col justify-between overflow-hidden">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
         <div>
           <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
             <TrendingUp className="size-5 text-emerald-500" />
-            Revenue Velocity (Last 7 Days)
+            Revenue Velocity (Last {chartDays} Days)
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground mt-0.5">
             Continuous daily revenue rolling window across all completed purchases
           </CardDescription>
         </div>
 
-        {/* Telemetry Pills */}
+        {/* Range Selector & Telemetry Pills */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Day Range Segmented Control */}
+          <div className="flex items-center rounded-xl bg-muted/60 p-0.5 border border-border/60">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onDaysChange?.(opt.value)}
+                aria-pressed={chartDays === opt.value}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  chartDays === opt.value
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-700 dark:text-emerald-400">
             <span className="text-[11px] text-muted-foreground uppercase font-semibold">
-              7D Volume:
+              {chartDays}D Volume:
             </span>
             <span className="font-mono font-bold">
-              {formatFullINR(total7DayRevenue)}
+              {formatFullINR(totalPeriodRevenue)}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted/50 border border-border/60 text-xs font-medium text-muted-foreground">
-            <span className="text-[11px] uppercase font-semibold">
-              Orders:
-            </span>
+            <span className="text-[11px] uppercase font-semibold">Orders:</span>
             <span className="font-mono font-bold text-foreground">
-              {total7DayOrders}
+              {totalPeriodOrders}
             </span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted/50 border border-border/60 text-xs font-medium text-muted-foreground">
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted/50 border border-border/60 text-xs font-medium text-muted-foreground">
             <span className="text-[11px] uppercase font-semibold">
               Daily Avg:
             </span>
@@ -128,7 +159,7 @@ export function RevenueAreaChart({ chartData = [], loading = false }) {
         </div>
       </CardHeader>
 
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 flex-1 flex flex-col justify-center">
         <div className="h-[320px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart

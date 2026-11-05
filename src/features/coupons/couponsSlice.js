@@ -4,6 +4,7 @@ import {
   createCouponThunk,
   updateCouponThunk,
   toggleCouponStatusThunk,
+  toggleCouponVisibilityThunk,
   deleteCouponThunk,
 } from './couponsApi'
 
@@ -14,6 +15,7 @@ const couponsSlice = createSlice({
     loadingList: false,
     isSubmitting: false,
     togglingId: null,
+    togglingVisibilityId: null,
     deletingId: null,
     error: null,
   },
@@ -78,6 +80,24 @@ const couponsSlice = createSlice({
       })
       .addCase(toggleCouponStatusThunk.rejected, (state, action) => {
         state.togglingId = null
+        state.error = action.payload
+      })
+
+      .addCase(toggleCouponVisibilityThunk.pending, (state, action) => {
+        state.togglingVisibilityId = action.meta.arg.id
+      })
+      .addCase(toggleCouponVisibilityThunk.fulfilled, (state, action) => {
+        state.togglingVisibilityId = null
+        const coupon = state.coupons.find((c) => c.id === action.payload.id)
+        if (coupon) {
+          coupon.is_hidden = action.payload.is_hidden
+          if (action.payload.share_url) {
+            coupon.share_url = action.payload.share_url
+          }
+        }
+      })
+      .addCase(toggleCouponVisibilityThunk.rejected, (state, action) => {
+        state.togglingVisibilityId = null
         state.error = action.payload
       })
 

@@ -1,8 +1,16 @@
 import { useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchDashboardStatsThunk } from '@/features/dashboard/dashboardApi'
+import {
+  fetchDashboardAllThunk,
+  fetchRevenueChartThunk,
+} from '@/features/dashboard/dashboardApi'
+import {
+  setChartDays,
+  clearDashboardErrors,
+} from '@/features/dashboard/dashboardSlice'
 import { MetricCards } from '@/components/dashboard/MetricCards'
 import { RevenueAreaChart } from '@/components/dashboard/RevenueAreaChart'
+import { QuestionTopicStats } from '@/components/dashboard/QuestionTopicStats'
 import { Button } from '@/components/ui/button'
 import {
   LayoutDashboard,
@@ -15,17 +23,38 @@ import {
 
 export function DashboardPage() {
   const dispatch = useDispatch()
-  const { metrics, chartData, loading, error } = useSelector(
-    (state) => state.dashboard
-  )
+  const {
+    metrics,
+    loadingMetrics,
+    metricsError,
 
-  const loadStats = useCallback(() => {
-    dispatch(fetchDashboardStatsThunk())
-  }, [dispatch])
+    chartData,
+    chartDays,
+    loadingChart,
+    chartError,
+
+    topics,
+    totalQuestions,
+    loadingTopics,
+    topicsError,
+
+    refreshing,
+  } = useSelector((state) => state.dashboard)
+
+  const loadAll = useCallback(() => {
+    dispatch(fetchDashboardAllThunk(chartDays))
+  }, [dispatch, chartDays])
 
   useEffect(() => {
-    loadStats()
-  }, [loadStats])
+    loadAll()
+  }, [loadAll])
+
+  const handleDaysChange = (days) => {
+    dispatch(setChartDays(days))
+    dispatch(fetchRevenueChartThunk(days))
+  }
+
+  const anyError = metricsError || chartError || topicsError
 
   return (
     <div className="space-y-7">
@@ -45,39 +74,67 @@ export function DashboardPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadStats}
-            disabled={loading}
+            onClick={loadAll}
+            disabled={refreshing}
             className="gap-2 h-9.5 px-4 rounded-xl border-border/70 hover:bg-muted font-medium"
           >
-            <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw
+              className={`size-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`}
+            />
+            <span>Refresh</span>
           </Button>
         </div>
       </div>
 
       {/* Error Banner */}
-      {error && (
+      {anyError && (
         <div className="p-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-sm flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" />
-            <span>{error}</span>
+            <span>{anyError}</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadStats}
-            className="border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 h-8 rounded-lg"
-          >
-            Retry
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadAll}
+              className="border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 h-8 rounded-lg"
+            >
+              Retry
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => dispatch(clearDashboardErrors())}
+              className="text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 h-8 rounded-lg"
+            >
+              Dismiss
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Top Metric Cards */}
-      <MetricCards metrics={metrics} loading={loading} />
+      <MetricCards metrics={metrics} loading={loadingMetrics} />
 
-      {/* 7-Day Revenue Area Chart */}
-      <RevenueAreaChart chartData={chartData} loading={loading} />
+      {/* Analytics Grid: Revenue Area Chart (2 Cols) + Inquiry Topics Bar Chart (1 Col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+        <div className="lg:col-span-2 flex flex-col">
+          <RevenueAreaChart
+            chartData={chartData}
+            chartDays={chartDays}
+            onDaysChange={handleDaysChange}
+            loading={loadingChart}
+          />
+        </div>
+        <div className="lg:col-span-1 flex flex-col">
+          <QuestionTopicStats
+            topics={topics}
+            totalQuestions={totalQuestions}
+            loading={loadingTopics}
+          />
+        </div>
+      </div>
 
       {/* Platform Telemetry & System Health Footer */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-1">
@@ -86,10 +143,12 @@ export function DashboardPage() {
             <ShieldCheck className="size-5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider">Razorpay India Gateway</p>
+            <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+              Razorpay India Gateway
+            </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              Live & Webhook Active
+              Live &amp; Webhook Active
             </p>
           </div>
         </div>
@@ -99,10 +158,12 @@ export function DashboardPage() {
             <Zap className="size-5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider">Vedic Astrology Engine</p>
+            <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+              Vedic Astrology Engine
+            </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
               <span className="size-2 rounded-full bg-primary" />
-              Using Japika's Algorithmic 
+              Using Japaika Algorithmic Engine
             </p>
           </div>
         </div>
@@ -112,7 +173,9 @@ export function DashboardPage() {
             <Globe2 className="size-5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider">Multi-Currency Billing</p>
+            <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+              Multi-Currency Billing
+            </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
               <span className="size-2 rounded-full bg-sky-500" />
               INR • USD

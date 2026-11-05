@@ -3,11 +3,12 @@ import api from '@/lib/api'
 
 export const fetchCouponsThunk = createAsyncThunk(
   'coupons/fetchCoupons',
-  async ({ search = '', is_active } = {}, { rejectWithValue }) => {
+  async ({ search = '', is_active, is_hidden } = {}, { rejectWithValue }) => {
     try {
       const params = {}
       if (search.trim()) params.search = search.trim()
       if (is_active && is_active !== 'all') params.is_active = is_active
+      if (is_hidden && is_hidden !== 'all') params.is_hidden = is_hidden
 
       const { data } = await api.get('/coupons', { params })
       return data.data.coupons
@@ -56,6 +57,21 @@ export const toggleCouponStatusThunk = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update coupon status.'
+      )
+    }
+  }
+)
+
+export const toggleCouponVisibilityThunk = createAsyncThunk(
+  'coupons/toggleVisibility',
+  async ({ id, is_hidden }, { rejectWithValue }) => {
+    try {
+      const payload = typeof is_hidden === 'boolean' ? { is_hidden } : {}
+      const { data } = await api.patch(`/coupons/${id}/visibility`, payload)
+      return data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update coupon visibility.'
       )
     }
   }

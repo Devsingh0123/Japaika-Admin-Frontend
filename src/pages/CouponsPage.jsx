@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchCouponsThunk,
   toggleCouponStatusThunk,
+  toggleCouponVisibilityThunk,
 } from '@/features/coupons/couponsApi'
 import { fetchPacksThunk } from '@/features/packs/packsApi'
 import {
@@ -31,18 +32,28 @@ import {
   IndianRupee,
   Gift,
   CheckCircle2,
-  XCircle,
   Sparkles,
   Filter,
   Edit2,
   Trash2,
+  Eye,
+  EyeOff,
+  Globe,
+  Share2,
+  Lock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const STATUS_FILTERS = [
-  { label: 'All Coupons', value: 'all' },
+  { label: 'All Statuses', value: 'all' },
   { label: 'Active', value: 'true' },
   { label: 'Inactive', value: 'false' },
+]
+
+const VISIBILITY_FILTERS = [
+  { label: 'All Visibility', value: 'all' },
+  { label: 'Public Only', value: 'false' },
+  { label: 'Secret / Personal', value: 'true' },
 ]
 
 function formatDiscount(type, value) {
@@ -70,7 +81,7 @@ function formatExpiry(dateStr) {
 
 export function CouponsPage() {
   const dispatch = useDispatch()
-  const { coupons, loadingList, togglingId } = useSelector(
+  const { coupons, loadingList, togglingId, togglingVisibilityId } = useSelector(
     (state) => state.coupons
   )
   const { packs } = useSelector((state) => state.packs)
@@ -78,11 +89,13 @@ export function CouponsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [visibilityFilter, setVisibilityFilter] = useState('all')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [couponToEdit, setCouponToEdit] = useState(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [couponToDelete, setCouponToDelete] = useState(null)
   const [copiedCode, setCopiedCode] = useState(null)
+  const [copiedLinkCode, setCopiedLinkCode] = useState(null)
 
   const handleOpenCreate = () => {
     setCouponToEdit(null)
@@ -111,10 +124,11 @@ export function CouponsPage() {
       fetchCouponsThunk({
         search: debouncedSearch,
         is_active: statusFilter,
+        is_hidden: visibilityFilter,
       })
     )
     dispatch(fetchPacksThunk())
-  }, [dispatch, debouncedSearch, statusFilter])
+  }, [dispatch, debouncedSearch, statusFilter, visibilityFilter])
 
   useEffect(() => {
     loadCoupons()
@@ -125,6 +139,16 @@ export function CouponsPage() {
     setCopiedCode(code)
     toast.success(`Coupon code "${code}" copied`)
     setTimeout(() => setCopiedCode(null), 2000)
+  }
+
+  const handleCopyShareLink = (coupon) => {
+    const url =
+      coupon.share_url ||
+      `https://japaika.com/pricing?coupon=${encodeURIComponent(coupon.code)}`
+    navigator.clipboard.writeText(url)
+    setCopiedLinkCode(coupon.code)
+    toast.success(`Share link for "${coupon.code}" copied to clipboard`)
+    setTimeout(() => setCopiedLinkCode(null), 2000)
   }
 
   const handleToggleStatus = async (coupon) => {
@@ -142,9 +166,26 @@ export function CouponsPage() {
     }
   }
 
+  const handleToggleVisibility = async (coupon) => {
+    const nextHidden = !coupon.is_hidden
+    const result = await dispatch(
+      toggleCouponVisibilityThunk({ id: coupon.id, is_hidden: nextHidden })
+    )
+
+    if (result.meta.requestStatus === 'fulfilled') {
+      toast.success(
+        `Coupon "${coupon.code}" marked as ${
+          nextHidden ? 'secret/hidden' : 'public'
+        }.`
+      )
+    } else {
+      toast.error(result.payload)
+    }
+  }
+
   const totalCoupons = coupons.length
   const activeCount = coupons.filter((c) => c.is_active).length
-  const inactiveCount = totalCoupons - activeCount
+  const secretCount = coupons.filter((c) => c.is_hidden).length
   const totalRedemptions = coupons.reduce(
     (sum, c) => sum + (Number(c.used_count) || 0),
     0
@@ -219,15 +260,15 @@ export function CouponsPage() {
 
         <div className="p-5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-xs space-y-1.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-            <span>Disabled / Expired</span>
-            <div className="size-8 rounded-lg bg-muted/60 text-muted-foreground flex items-center justify-center">
-              <XCircle className="size-4" />
+            <span>Secret Coupons</span>
+            <div className="size-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <Lock className="size-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-muted-foreground font-mono">
-            {inactiveCount}
+          <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 font-mono">
+            {secretCount}
           </p>
-          <p className="text-xs text-muted-foreground">Inactive campaigns</p>
+          <p className="text-xs text-muted-foreground">Personal / direct distribution</p>
         </div>
 
         <div className="p-5 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm shadow-xs space-y-1.5">
@@ -245,7 +286,7 @@ export function CouponsPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="relative flex-1 max-w-md">
           <Search className="size-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -257,24 +298,46 @@ export function CouponsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1.5 font-medium">
-            <Filter className="size-3.5" />
-            Status:
-          </span>
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-colors ${
-                statusFilter === f.value
-                  ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1.5 font-medium">
+              <Filter className="size-3.5" />
+              Status:
+            </span>
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setStatusFilter(f.value)}
+                className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-colors ${
+                  statusFilter === f.value
+                    ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1.5 font-medium">
+              <EyeOff className="size-3.5" />
+              Visibility:
+            </span>
+            {VISIBILITY_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setVisibilityFilter(f.value)}
+                className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-colors ${
+                  visibilityFilter === f.value
+                    ? 'bg-purple-600 text-white shadow-xs font-semibold'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -367,23 +430,53 @@ export function CouponsPage() {
                     key={coupon.id}
                     className="hover:bg-muted/30 transition-colors border-border/40 group"
                   >
-                    {/* Code */}
+                    {/* Code & Visibility */}
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-1 rounded">
-                          {coupon.code}
-                        </span>
-                        <button
-                          onClick={() => handleCopy(coupon.code)}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:text-foreground text-muted-foreground transition-opacity rounded"
-                          title="Copy Code"
-                        >
-                          {copiedCode === coupon.code ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
+                      <div className="flex flex-col gap-1 items-start">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded">
+                            {coupon.code}
+                          </span>
+                          <button
+                            onClick={() => handleCopy(coupon.code)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:text-foreground text-muted-foreground transition-opacity rounded"
+                            title="Copy Code"
+                          >
+                            {copiedCode === coupon.code ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleCopyShareLink(coupon)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:text-primary text-muted-foreground transition-opacity rounded"
+                            title="Copy Direct Share URL"
+                          >
+                            {copiedLinkCode === coupon.code ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Share2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        {coupon.is_hidden ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10 flex items-center gap-1 font-medium"
+                          >
+                            <EyeOff className="size-2.5" />
+                            Secret
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 flex items-center gap-1 font-medium"
+                          >
+                            <Globe className="size-2.5" />
+                            Public
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
 
@@ -479,9 +572,34 @@ export function CouponsPage() {
                       </div>
                     </TableCell>
 
-                    {/* Edit & Delete Actions */}
+                    {/* Visibility, Edit & Delete Actions */}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => handleToggleVisibility(coupon)}
+                          disabled={togglingVisibilityId === coupon.id}
+                          className={`size-8 rounded-lg border-border/70 ${
+                            coupon.is_hidden
+                              ? 'text-purple-600 dark:text-purple-400 hover:border-purple-500/40 hover:bg-purple-500/10'
+                              : 'text-muted-foreground hover:text-foreground hover:border-border'
+                          }`}
+                          title={
+                            coupon.is_hidden
+                              ? 'Make Coupon Public'
+                              : 'Make Coupon Secret / Hidden'
+                          }
+                          aria-label={`Toggle visibility for ${coupon.code}`}
+                        >
+                          {togglingVisibilityId === coupon.id ? (
+                            <RefreshCw className="size-3.5 animate-spin" />
+                          ) : coupon.is_hidden ? (
+                            <EyeOff className="size-3.5" />
+                          ) : (
+                            <Eye className="size-3.5" />
+                          )}
+                        </Button>
                         <Button
                           variant="outline"
                           size="icon-sm"
