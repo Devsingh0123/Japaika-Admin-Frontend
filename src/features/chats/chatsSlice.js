@@ -59,7 +59,7 @@ const chatsSlice = createSlice({
         state.loadingStats = false
         state.stats = action.payload
       })
-      .addCase(fetchChatStatsThunk.rejected, (state, action) => {
+      .addCase(fetchChatStatsThunk.rejected, (state) => {
         state.loadingStats = false
       })
 

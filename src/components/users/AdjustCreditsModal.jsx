@@ -61,7 +61,7 @@ export function AdjustCreditsModal({ open, onOpenChange, user }) {
     }
 
     try {
-      const resultAction = await dispatch(
+      await dispatch(
         adjustUserCreditsThunk({
           id: user.id,
           credit_type: creditType,

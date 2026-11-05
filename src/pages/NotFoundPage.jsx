@@ -6,9 +6,6 @@ import {
   Users,
   Receipt,
   BookOpen,
-  Package,
-  FileText,
-  Search,
   Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'

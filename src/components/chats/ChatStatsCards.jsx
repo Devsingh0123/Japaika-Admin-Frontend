@@ -1,4 +1,4 @@
-import { MessageSquare, Sparkles, Cpu, ThumbsUp, Compass, BookOpen } from 'lucide-react'
+import { MessageSquare, Sparkles, Cpu, ThumbsUp } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function ChatStatsCards({ stats, loading }) {

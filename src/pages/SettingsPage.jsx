@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
-  Settings,
   User,
   Shield,
   KeyRound,
@@ -12,7 +11,6 @@ import {
   HardDrive,
   RefreshCw,
   CheckCircle2,
-  AlertCircle,
   Eye,
   EyeOff,
   Upload,
@@ -137,7 +135,7 @@ export function SettingsPage() {
     }
 
     try {
-      const result = await dispatch(
+      await dispatch(
         updateAdminProfileThunk({
           name: name.trim(),
           avatar_url: avatarUrl.trim() || null,

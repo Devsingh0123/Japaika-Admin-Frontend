@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchChatsThunk,
@@ -26,15 +26,12 @@ import {
   Sparkles,
   BookOpen,
   Calendar,
-  User,
-  Cpu,
   Coins,
   ThumbsUp,
   ThumbsDown,
   Eye,
   ChevronLeft,
   ChevronRight,
-  Filter,
 } from 'lucide-react'
 
 const ENGINE_FILTERS = [
@@ -339,7 +336,7 @@ export function ChatsPage() {
                     {/* Message Count */}
                     <TableCell className="text-center">
                       <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-muted/60 font-mono text-xs font-semibold text-foreground">
-                        {t.message_count ?? (t.user_message_count + t.assistant_message_count) ?? 0}
+                        {t.message_count ?? ((t.user_message_count || 0) + (t.assistant_message_count || 0))}
                       </span>
                     </TableCell>
 
