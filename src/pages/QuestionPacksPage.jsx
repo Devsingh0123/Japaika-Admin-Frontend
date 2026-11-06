@@ -4,6 +4,7 @@ import {
   fetchPacksThunk,
   updatePackThunk,
 } from '@/features/packs/packsApi'
+import { fetchCouponsThunk } from '@/features/coupons/couponsApi'
 import {
   Table,
   TableBody,
@@ -29,6 +30,7 @@ import {
   CheckCircle2,
   Sparkles,
   Filter,
+  Tag,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -129,6 +131,7 @@ export function QuestionPacksPage() {
         is_active: statusFilter,
       })
     )
+    dispatch(fetchCouponsThunk({ is_active: 'true' }))
   }, [dispatch, statusFilter])
 
   useEffect(() => {
@@ -392,10 +395,37 @@ export function QuestionPacksPage() {
                 const isToggling = togglingId === pack.id
                 const pricesMap = parsePrices(pack.prices)
 
-                const inrOffer = pricesMap.INR?.offerPrice
-                const inrOrig = pricesMap.INR?.originalPrice
-                const usdOffer = pricesMap.USD?.offerPrice
-                const usdOrig = pricesMap.USD?.originalPrice
+                const inrBase =
+                  pricesMap.INR?.basePrice !== undefined
+                    ? pricesMap.INR.basePrice
+                    : pricesMap.INR?.originalPrice !== undefined
+                    ? pricesMap.INR.originalPrice
+                    : pricesMap.INR?.offerPrice
+
+                const usdBase =
+                  pricesMap.USD?.basePrice !== undefined
+                    ? pricesMap.USD.basePrice
+                    : pricesMap.USD?.originalPrice !== undefined
+                    ? pricesMap.USD.originalPrice
+                    : pricesMap.USD?.offerPrice
+
+                const offerTelemetry = pack.offer
+                const hasOffer = Boolean(
+                  offerTelemetry &&
+                    (offerTelemetry.prices?.INR || offerTelemetry.prices?.USD)
+                )
+
+                const inrEffective = hasOffer
+                  ? offerTelemetry.prices?.INR?.effectivePrice
+                  : inrBase
+                const usdEffective = hasOffer
+                  ? offerTelemetry.prices?.USD?.effectivePrice
+                  : usdBase
+                const inrDiscount = hasOffer
+                  ? offerTelemetry.prices?.INR?.discountAmount
+                  : 0
+                const couponCode =
+                  offerTelemetry?.coupon_code || pack.default_coupon?.code
 
                 return (
                   <TableRow
@@ -442,30 +472,43 @@ export function QuestionPacksPage() {
                     {/* Tier Access */}
                     <TableCell>{getTierBadge(pack.tier)}</TableCell>
 
-                    {/* Offer Price (INR & USD) */}
+                    {/* Price (INR & USD) + Auto-Coupon */}
                     <TableCell>
                       <div className="flex flex-col gap-1 text-xs">
                         {/* INR Row */}
                         <div className="flex items-center gap-1.5 font-mono">
                           <span className="font-bold text-foreground text-sm">
-                            {formatINR(inrOffer)}
+                            {formatINR(inrEffective)}
                           </span>
-                          {Number(inrOrig) > Number(inrOffer) && (
+                          {hasOffer && inrDiscount > 0 && (
                             <span className="text-muted-foreground line-through text-[11px]">
-                              {formatINR(inrOrig)}
+                              {formatINR(inrBase)}
                             </span>
                           )}
                         </div>
 
-                        {/* USD Row + Other currencies badge */}
-                        <div className="flex items-center gap-2 font-mono text-muted-foreground text-[11px]">
+                        {/* USD Row */}
+                        <div className="flex items-center gap-1.5 font-mono text-muted-foreground text-[11px]">
                           <span>
-                            USD: <strong className="text-foreground">{formatUSD(usdOffer)}</strong>
+                            USD: <strong className="text-foreground">{formatUSD(usdEffective)}</strong>
                           </span>
-                          {Number(usdOrig) > Number(usdOffer) && (
-                            <span className="line-through">{formatUSD(usdOrig)}</span>
+                          {hasOffer && Number(usdBase) > Number(usdEffective) && (
+                            <span className="line-through">{formatUSD(usdBase)}</span>
                           )}
                         </div>
+
+                        {/* Auto-applied coupon badge */}
+                        {couponCode && (
+                          <div className="pt-0.5">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 font-mono flex items-center gap-1 w-fit"
+                            >
+                              <Tag className="size-2.5" />
+                              {couponCode} Auto-Applied
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
 

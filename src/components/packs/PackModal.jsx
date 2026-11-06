@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { createPackThunk, updatePackThunk } from '@/features/packs/packsApi'
 import { clearPacksError } from '@/features/packs/packsSlice'
+import { fetchCouponsThunk } from '@/features/coupons/couponsApi'
 import {
   Package,
   Sparkles,
@@ -24,12 +25,13 @@ import {
   Shield,
   ArrowUpDown,
   Tag,
+  Percent,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const DEFAULT_PRICES = {
-  INR: { originalPrice: '999', offerPrice: '499' },
-  USD: { originalPrice: '14.99', offerPrice: '7.99' },
+  INR: { basePrice: '1399' },
+  USD: { basePrice: '14.99' },
 }
 
 const CURRENCIES = [
@@ -60,6 +62,7 @@ function parsePrices(prices) {
 export function PackModal({ open, onOpenChange, packToEdit = null }) {
   const dispatch = useDispatch()
   const { isSubmitting, error } = useSelector((state) => state.packs)
+  const { coupons } = useSelector((state) => state.coupons)
 
   const isEdit = Boolean(packToEdit)
 
@@ -70,14 +73,22 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
   const [credits, setCredits] = useState('5')
   const [sortOrder, setSortOrder] = useState('1')
   const [isActive, setIsActive] = useState(true)
+  const [defaultCouponId, setDefaultCouponId] = useState('')
 
-  // Multi-Currency Prices state: { INR: { originalPrice: '', offerPrice: '' }, ... }
+  // Multi-Currency Prices state: { INR: { basePrice: '' }, USD: { basePrice: '' } }
   const [prices, setPrices] = useState({
-    INR: { originalPrice: '', offerPrice: '' },
-    USD: { originalPrice: '', offerPrice: '' },
-          })
+    INR: { basePrice: '' },
+    USD: { basePrice: '' },
+  })
 
   const [validationError, setValidationError] = useState('')
+
+  // Load active coupons if not already present
+  useEffect(() => {
+    if (open && coupons.length === 0) {
+      dispatch(fetchCouponsThunk({ is_active: 'true' }))
+    }
+  }, [open, coupons.length, dispatch])
 
   const resetForm = useCallback(() => {
     setName('')
@@ -87,6 +98,7 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
     setCredits('5')
     setSortOrder('1')
     setIsActive(true)
+    setDefaultCouponId('')
     setPrices(DEFAULT_PRICES)
     setValidationError('')
     dispatch(clearPacksError())
@@ -101,29 +113,36 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
       setCredits(String(packToEdit.credits ?? '5'))
       setSortOrder(String(packToEdit.sort_order ?? '1'))
       setIsActive(packToEdit.is_active !== false)
+      setDefaultCouponId(packToEdit.default_coupon_id || '')
 
       const parsed = parsePrices(packToEdit.prices)
+      const inrBase =
+        parsed.INR?.basePrice !== undefined
+          ? parsed.INR.basePrice
+          : parsed.INR?.originalPrice !== undefined
+          ? parsed.INR.originalPrice
+          : parsed.INR?.offerPrice ?? ''
+      const usdBase =
+        parsed.USD?.basePrice !== undefined
+          ? parsed.USD.basePrice
+          : parsed.USD?.originalPrice !== undefined
+          ? parsed.USD.originalPrice
+          : parsed.USD?.offerPrice ?? ''
+
       setPrices({
-        INR: {
-          originalPrice: parsed.INR?.originalPrice ?? '',
-          offerPrice: parsed.INR?.offerPrice ?? '',
-        },
-        USD: {
-          originalPrice: parsed.USD?.originalPrice ?? '',
-          offerPrice: parsed.USD?.offerPrice ?? '',
-        },
+        INR: { basePrice: inrBase !== '' ? String(inrBase) : '' },
+        USD: { basePrice: usdBase !== '' ? String(usdBase) : '' },
       })
     } else {
       resetForm()
     }
   }, [packToEdit, open, resetForm])
 
-  const handlePriceChange = (currCode, field, value) => {
+  const handlePriceChange = (currCode, value) => {
     setPrices((prev) => ({
       ...prev,
       [currCode]: {
-        ...prev[currCode],
-        [field]: value,
+        basePrice: value,
       },
     }))
   }
@@ -133,6 +152,51 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
     onOpenChange(false)
     resetForm()
   }
+
+  // Find linked coupon for live computation
+  const selectedCoupon = coupons.find((c) => c.id === defaultCouponId)
+
+  // Compute live effective price calculation for admin preview
+  const livePreview = (() => {
+    if (!selectedCoupon) return null
+    const val = Number(selectedCoupon.discount_value) || 0
+    const inrBase = parseFloat(prices.INR?.basePrice) || 0
+    const usdBase = parseFloat(prices.USD?.basePrice) || 0
+
+    let inrDiscount = 0
+    let usdDiscount = 0
+
+    if (selectedCoupon.discount_type === 'percentage') {
+      inrDiscount = Math.round(inrBase * (val / 100) * 100) / 100
+      usdDiscount = Math.round(usdBase * (val / 100) * 100) / 100
+    } else if (selectedCoupon.discount_type === 'flat') {
+      inrDiscount = Math.min(inrBase, val)
+      if (usdBase > 0 && inrBase > 0) {
+        const ratio = Math.min(1, val / inrBase)
+        usdDiscount = Math.round(usdBase * ratio * 100) / 100
+      } else {
+        usdDiscount = Math.min(usdBase, val)
+      }
+    }
+
+    return {
+      couponCode: selectedCoupon.code,
+      discountLabel:
+        selectedCoupon.discount_type === 'percentage'
+          ? `${val}% OFF`
+          : `₹${val} OFF`,
+      INR: {
+        basePrice: inrBase,
+        discountAmount: inrDiscount,
+        effectivePrice: Math.max(0, Math.round((inrBase - inrDiscount) * 100) / 100),
+      },
+      USD: {
+        basePrice: usdBase,
+        discountAmount: usdDiscount,
+        effectivePrice: Math.max(0, Math.round((usdBase - usdDiscount) * 100) / 100),
+      },
+    }
+  })()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -150,25 +214,18 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
       return
     }
 
-    // Build prices object with validation
+    // Build prices object with single basePrice validation
     const formattedPrices = {}
     for (const curr of CURRENCIES) {
-      const orig = parseFloat(prices[curr.code]?.originalPrice)
-      const offer = parseFloat(prices[curr.code]?.offerPrice)
+      const base = parseFloat(prices[curr.code]?.basePrice)
 
-      if (isNaN(offer) || offer <= 0) {
-        setValidationError(`Offer price for ${curr.code} must be greater than 0.`)
-        return
-      }
-
-      if (!isNaN(orig) && orig > 0 && offer > orig) {
-        setValidationError(`Offer price for ${curr.code} cannot exceed original price.`)
+      if (isNaN(base) || base <= 0) {
+        setValidationError(`Base price for ${curr.code} must be greater than 0.`)
         return
       }
 
       formattedPrices[curr.code] = {
-        originalPrice: isNaN(orig) || orig <= 0 ? offer : orig,
-        offerPrice: offer,
+        basePrice: base,
       }
     }
 
@@ -179,6 +236,7 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
       sort_order: parseInt(sortOrder, 10) || 1,
       is_active: isActive,
       prices: formattedPrices,
+      default_coupon_id: defaultCouponId || null,
     }
 
     if (code.trim()) {
@@ -358,26 +416,21 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
             </div>
           </div>
 
-          {/* Multi-Currency Pricing Matrix */}
+          {/* Multi-Currency Pricing Matrix (Base Price) */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-primary" />
-                Multi-Currency Pricing Matrix *
+                Multi-Currency Base Price *
               </Label>
               <span className="text-[11px] text-muted-foreground">
-                Set Original (M.R.P.) & Offer Selling Price
+                Set base catalogue selling price for INR and USD
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {CURRENCIES.map((curr) => {
-                const orig = parseFloat(prices[curr.code]?.originalPrice)
-                const offer = parseFloat(prices[curr.code]?.offerPrice)
-                const discountPercent =
-                  !isNaN(orig) && !isNaN(offer) && orig > offer
-                    ? Math.round(((orig - offer) / orig) * 100)
-                    : 0
+                const baseVal = prices[curr.code]?.basePrice || ''
 
                 return (
                   <div
@@ -393,63 +446,146 @@ export function PackModal({ open, onOpenChange, packToEdit = null }) {
                           {curr.label}
                         </span>
                       </div>
-                      {discountPercent > 0 && (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0">
-                          {discountPercent}% OFF
-                        </Badge>
-                      )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-muted-foreground uppercase font-medium">
-                          Original Price
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-primary uppercase font-semibold">
+                        Base Price *
+                      </span>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-primary text-xs font-mono font-bold">
+                          {curr.symbol}
                         </span>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-mono">
-                            {curr.symbol}
-                          </span>
-                          <Input
-                            type="number"
-                            step={curr.step}
-                            min={curr.min}
-                            value={prices[curr.code]?.originalPrice}
-                            onChange={(e) =>
-                              handlePriceChange(curr.code, 'originalPrice', e.target.value)
-                            }
-                            placeholder="0"
-                            className="pl-6 font-mono text-xs h-8"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-primary uppercase font-semibold">
-                          Offer Price *
-                        </span>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-primary text-xs font-mono font-bold">
-                            {curr.symbol}
-                          </span>
-                          <Input
-                            type="number"
-                            step={curr.step}
-                            min={curr.min}
-                            value={prices[curr.code]?.offerPrice}
-                            onChange={(e) =>
-                              handlePriceChange(curr.code, 'offerPrice', e.target.value)
-                            }
-                            placeholder="0"
-                            className="pl-6 font-mono text-xs h-8 font-semibold border-primary/40 focus:border-primary"
-                            required
-                          />
-                        </div>
+                        <Input
+                          type="number"
+                          step={curr.step}
+                          min={curr.min}
+                          value={baseVal}
+                          onChange={(e) =>
+                            handlePriceChange(curr.code, e.target.value)
+                          }
+                          placeholder="0"
+                          className="pl-6 font-mono text-xs h-9 font-semibold border-border/70 focus:border-primary"
+                          required
+                        />
                       </div>
                     </div>
                   </div>
                 )
               })}
             </div>
+          </div>
+
+          {/* Auto-Applied Default Coupon & Live Offer Telemetry */}
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="pack-default-coupon"
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"
+                >
+                  <Percent className="size-3.5 text-primary" />
+                  Auto-Applied Offer Coupon
+                </Label>
+                <span className="text-[11px] text-muted-foreground">
+                  Optional discount applied at checkout
+                </span>
+              </div>
+
+              <select
+                id="pack-default-coupon"
+                value={defaultCouponId}
+                onChange={(e) => setDefaultCouponId(e.target.value)}
+                className="w-full text-xs rounded-xl bg-background border border-border/70 px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="">
+                  None (Standard Price — No Auto-Applied Coupon)
+                </option>
+                {coupons
+                  .filter((c) => c.is_active)
+                  .map((c) => {
+                    const discountText =
+                      c.discount_type === 'percentage'
+                        ? `${Number(c.discount_value)}% OFF`
+                        : `₹${Number(c.discount_value).toFixed(2)} OFF`
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.code} — {discountText} ({c.description || 'Promotional offer'})
+                      </option>
+                    )
+                  })}
+              </select>
+            </div>
+
+            {/* Live Calculation Preview Banner */}
+            {livePreview ? (
+              <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px] font-mono font-semibold"
+                    >
+                      {livePreview.couponCode}
+                    </Badge>
+                    <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      Auto-Applied ({livePreview.discountLabel})
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    Live Checkout Preview
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
+                  <div className="p-2 rounded-md bg-background/60 border border-border/50">
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                      India (INR)
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-0.5 font-mono">
+                      <span className="font-bold text-foreground text-sm">
+                        ₹{livePreview.INR.effectivePrice.toLocaleString('en-IN')}
+                      </span>
+                      {livePreview.INR.discountAmount > 0 && (
+                        <span className="text-muted-foreground line-through text-[11px]">
+                          ₹{livePreview.INR.basePrice.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+                    {livePreview.INR.discountAmount > 0 && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        Save ₹{livePreview.INR.discountAmount.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-2 rounded-md bg-background/60 border border-border/50">
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                      Global (USD)
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-0.5 font-mono">
+                      <span className="font-bold text-foreground text-sm">
+                        ${livePreview.USD.effectivePrice.toFixed(2)}
+                      </span>
+                      {livePreview.USD.discountAmount > 0 && (
+                        <span className="text-muted-foreground line-through text-[11px]">
+                          ${livePreview.USD.basePrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {livePreview.USD.discountAmount > 0 && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        Save ${livePreview.USD.discountAmount.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground italic">
+                No offer coupon linked. Customers will purchase this pack at the full base price.
+              </p>
+            )}
           </div>
 
           {/* Active Status Toggle */}

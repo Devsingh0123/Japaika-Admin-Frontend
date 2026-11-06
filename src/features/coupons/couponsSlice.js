@@ -5,6 +5,8 @@ import {
   updateCouponThunk,
   toggleCouponStatusThunk,
   toggleCouponVisibilityThunk,
+  toggleCouponSpecialOfferThunk,
+  fetchActiveSpecialOfferThunk,
   deleteCouponThunk,
 } from './couponsApi'
 
@@ -12,10 +14,13 @@ const couponsSlice = createSlice({
   name: 'coupons',
   initialState: {
     coupons: [],
+    activeSpecialOffer: null,
     loadingList: false,
+    loadingSpecialOffer: false,
     isSubmitting: false,
     togglingId: null,
     togglingVisibilityId: null,
+    togglingSpecialOfferId: null,
     deletingId: null,
     error: null,
   },
@@ -99,6 +104,43 @@ const couponsSlice = createSlice({
       .addCase(toggleCouponVisibilityThunk.rejected, (state, action) => {
         state.togglingVisibilityId = null
         state.error = action.payload
+      })
+
+      .addCase(toggleCouponSpecialOfferThunk.pending, (state, action) => {
+        state.togglingSpecialOfferId = action.meta.arg.id
+      })
+      .addCase(toggleCouponSpecialOfferThunk.fulfilled, (state, action) => {
+        state.togglingSpecialOfferId = null
+        const coupon = state.coupons.find((c) => c.id === action.payload.id)
+        if (coupon) {
+          coupon.is_special_offer = action.payload.is_special_offer
+          if (action.payload.share_url) {
+            coupon.share_url = action.payload.share_url
+          }
+        }
+        if (action.payload.is_special_offer) {
+          state.activeSpecialOffer = {
+            ...(coupon || {}),
+            ...action.payload,
+          }
+        } else if (state.activeSpecialOffer?.id === action.payload.id) {
+          state.activeSpecialOffer = null
+        }
+      })
+      .addCase(toggleCouponSpecialOfferThunk.rejected, (state, action) => {
+        state.togglingSpecialOfferId = null
+        state.error = action.payload
+      })
+
+      .addCase(fetchActiveSpecialOfferThunk.pending, (state) => {
+        state.loadingSpecialOffer = true
+      })
+      .addCase(fetchActiveSpecialOfferThunk.fulfilled, (state, action) => {
+        state.loadingSpecialOffer = false
+        state.activeSpecialOffer = action.payload
+      })
+      .addCase(fetchActiveSpecialOfferThunk.rejected, (state) => {
+        state.loadingSpecialOffer = false
       })
 
       .addCase(deleteCouponThunk.pending, (state, action) => {

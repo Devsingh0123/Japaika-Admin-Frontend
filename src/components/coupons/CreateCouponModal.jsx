@@ -22,7 +22,6 @@ import {
   Tag,
   Percent,
   IndianRupee,
-  Gift,
   Calendar,
   Layers,
   Sparkles,
@@ -33,6 +32,7 @@ import {
   Globe,
   Share2,
   Copy,
+  Gift,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -48,12 +48,6 @@ const DISCOUNT_TYPES = [
     label: 'Flat Discount',
     desc: 'Fixed ₹ deduction',
     icon: IndianRupee,
-  },
-  {
-    id: 'pack_offer',
-    label: 'Pack Offer',
-    desc: 'Special pack deal',
-    icon: Gift,
   },
 ]
 
@@ -96,6 +90,9 @@ export function CreateCouponModal({
   const [maxUses, setMaxUses] = useState(couponToEdit?.max_uses ?? '')
   const [isActive, setIsActive] = useState(couponToEdit?.is_active ?? true)
   const [isHidden, setIsHidden] = useState(couponToEdit?.is_hidden ?? false)
+  const [isSpecialOffer, setIsSpecialOffer] = useState(
+    couponToEdit?.is_special_offer ?? false
+  )
   const [validationError, setValidationError] = useState('')
 
   const handleClose = () => {
@@ -154,6 +151,7 @@ export function CreateCouponModal({
       max_uses: maxUses ? Number(maxUses) : null,
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       is_hidden: isHidden,
+      is_special_offer: isSpecialOffer,
       ...(isEditMode && { is_active: isActive }),
     }
 
@@ -465,6 +463,38 @@ export function CreateCouponModal({
                 </Button>
               </div>
             )}
+          </div>
+
+          {/* Special Promotional Offer (AI Chat Upsells) */}
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5 pr-4">
+                <Label
+                  htmlFor="coupon-special-offer-switch"
+                  className="text-xs font-semibold text-foreground cursor-pointer flex items-center gap-1.5"
+                >
+                  <Gift
+                    className={`size-3.5 ${
+                      isSpecialOffer
+                        ? 'text-amber-500'
+                        : 'text-muted-foreground'
+                    }`}
+                  />
+                  Featured Special Offer (AI Chat Upsells)
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {isSpecialOffer
+                    ? 'Featured as the active special offer for AI chat zero-balance upsell cards and marketing campaigns.'
+                    : 'Standard promotional voucher, not automatically featured as the special chat upsell.'}
+                </p>
+              </div>
+              <Switch
+                id="coupon-special-offer-switch"
+                checked={isSpecialOffer}
+                onCheckedChange={setIsSpecialOffer}
+                className="data-[state=checked]:bg-amber-500"
+              />
+            </div>
           </div>
 
           {/* Active Status Toggle in Edit Mode */}

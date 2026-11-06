@@ -4,6 +4,8 @@ import {
   fetchCouponsThunk,
   toggleCouponStatusThunk,
   toggleCouponVisibilityThunk,
+  toggleCouponSpecialOfferThunk,
+  fetchActiveSpecialOfferThunk,
 } from '@/features/coupons/couponsApi'
 import { fetchPacksThunk } from '@/features/packs/packsApi'
 import {
@@ -56,6 +58,12 @@ const VISIBILITY_FILTERS = [
   { label: 'Secret / Personal', value: 'true' },
 ]
 
+const SPECIAL_OFFER_FILTERS = [
+  { label: 'All Coupons', value: 'all' },
+  { label: 'Special Offers', value: 'true' },
+  { label: 'Standard', value: 'false' },
+]
+
 function formatDiscount(type, value) {
   const val = Number(value)
   if (type === 'percentage') return `${val}% OFF`
@@ -81,15 +89,21 @@ function formatExpiry(dateStr) {
 
 export function CouponsPage() {
   const dispatch = useDispatch()
-  const { coupons, loadingList, togglingId, togglingVisibilityId } = useSelector(
-    (state) => state.coupons
-  )
+  const {
+    coupons,
+    activeSpecialOffer,
+    loadingList,
+    togglingId,
+    togglingVisibilityId,
+    togglingSpecialOfferId,
+  } = useSelector((state) => state.coupons)
   const { packs } = useSelector((state) => state.packs)
 
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [visibilityFilter, setVisibilityFilter] = useState('all')
+  const [specialOfferFilter, setSpecialOfferFilter] = useState('all')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [couponToEdit, setCouponToEdit] = useState(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -125,10 +139,12 @@ export function CouponsPage() {
         search: debouncedSearch,
         is_active: statusFilter,
         is_hidden: visibilityFilter,
+        is_special_offer: specialOfferFilter,
       })
     )
+    dispatch(fetchActiveSpecialOfferThunk())
     dispatch(fetchPacksThunk())
-  }, [dispatch, debouncedSearch, statusFilter, visibilityFilter])
+  }, [dispatch, debouncedSearch, statusFilter, visibilityFilter, specialOfferFilter])
 
   useEffect(() => {
     loadCoupons()
@@ -178,6 +194,29 @@ export function CouponsPage() {
           nextHidden ? 'secret/hidden' : 'public'
         }.`
       )
+    } else {
+      toast.error(result.payload)
+    }
+  }
+
+  const handleToggleSpecialOffer = async (coupon) => {
+    const nextVal = !coupon.is_special_offer
+    const result = await dispatch(
+      toggleCouponSpecialOfferThunk({
+        id: coupon.id,
+        is_special_offer: nextVal,
+      })
+    )
+
+    if (result.meta.requestStatus === 'fulfilled') {
+      toast.success(
+        `Coupon "${coupon.code}" ${
+          nextVal
+            ? 'marked as featured special offer'
+            : 'removed from special offers'
+        }.`
+      )
+      dispatch(fetchActiveSpecialOfferThunk())
     } else {
       toast.error(result.payload)
     }
@@ -285,6 +324,52 @@ export function CouponsPage() {
         </div>
       </div>
 
+      {/* Featured Special Offer Banner (if configured) */}
+      {activeSpecialOffer && (
+        <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Gift className="size-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase font-bold tracking-wider text-amber-600 dark:text-amber-400">
+                  Featured Special Offer (AI Chat Upsell)
+                </span>
+                <span className="font-mono font-bold text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">
+                  {activeSpecialOffer.code}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {activeSpecialOffer.description ||
+                  formatDiscount(
+                    activeSpecialOffer.discount_type,
+                    activeSpecialOffer.discount_value
+                  )}{' '}
+                • Promoted automatically to users with zero question credits.
+              </p>
+            </div>
+          </div>
+
+          {activeSpecialOffer.share_url && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(activeSpecialOffer.share_url)
+                toast.success(
+                  `Share link for "${activeSpecialOffer.code}" copied to clipboard`
+                )
+              }}
+              className="gap-1.5 h-8 text-xs border-amber-500/30 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 self-start sm:self-auto rounded-xl font-medium"
+            >
+              <Share2 className="size-3.5" />
+              Copy Promo Link
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="relative flex-1 max-w-md">
@@ -331,6 +416,26 @@ export function CouponsPage() {
                 className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-colors ${
                   visibilityFilter === f.value
                     ? 'bg-purple-600 text-white shadow-xs font-semibold'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1.5 font-medium">
+              <Gift className="size-3.5 text-amber-500" />
+              Offers:
+            </span>
+            {SPECIAL_OFFER_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setSpecialOfferFilter(f.value)}
+                className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-colors ${
+                  specialOfferFilter === f.value
+                    ? 'bg-amber-600 text-white shadow-xs font-semibold'
                     : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
@@ -460,23 +565,34 @@ export function CouponsPage() {
                             )}
                           </button>
                         </div>
-                        {coupon.is_hidden ? (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1.5 py-0 border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10 flex items-center gap-1 font-medium"
-                          >
-                            <EyeOff className="size-2.5" />
-                            Secret
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 flex items-center gap-1 font-medium"
-                          >
-                            <Globe className="size-2.5" />
-                            Public
-                          </Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {coupon.is_hidden ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10 flex items-center gap-1 font-medium"
+                            >
+                              <EyeOff className="size-2.5" />
+                              Secret
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 flex items-center gap-1 font-medium"
+                            >
+                              <Globe className="size-2.5" />
+                              Public
+                            </Badge>
+                          )}
+                          {coupon.is_special_offer && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 flex items-center gap-1 font-semibold"
+                            >
+                              <Gift className="size-2.5" />
+                              Special Offer
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
 
@@ -572,9 +688,32 @@ export function CouponsPage() {
                       </div>
                     </TableCell>
 
-                    {/* Visibility, Edit & Delete Actions */}
+                    {/* Special Offer, Visibility, Edit & Delete Actions */}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => handleToggleSpecialOffer(coupon)}
+                          disabled={togglingSpecialOfferId === coupon.id}
+                          className={`size-8 rounded-lg border-border/70 ${
+                            coupon.is_special_offer
+                              ? 'text-amber-600 dark:text-amber-400 border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20'
+                              : 'text-muted-foreground hover:text-foreground hover:border-border'
+                          }`}
+                          title={
+                            coupon.is_special_offer
+                              ? 'Remove from Featured Special Offers'
+                              : 'Feature as Special Offer (AI Chat Upsells)'
+                          }
+                          aria-label={`Toggle special offer for ${coupon.code}`}
+                        >
+                          {togglingSpecialOfferId === coupon.id ? (
+                            <RefreshCw className="size-3.5 animate-spin" />
+                          ) : (
+                            <Gift className="size-3.5" />
+                          )}
+                        </Button>
                         <Button
                           variant="outline"
                           size="icon-sm"

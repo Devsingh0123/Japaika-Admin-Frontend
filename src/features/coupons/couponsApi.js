@@ -3,12 +3,18 @@ import api from '@/lib/api'
 
 export const fetchCouponsThunk = createAsyncThunk(
   'coupons/fetchCoupons',
-  async ({ search = '', is_active, is_hidden } = {}, { rejectWithValue }) => {
+  async (
+    { search = '', is_active, is_hidden, is_special_offer } = {},
+    { rejectWithValue }
+  ) => {
     try {
       const params = {}
       if (search.trim()) params.search = search.trim()
       if (is_active && is_active !== 'all') params.is_active = is_active
       if (is_hidden && is_hidden !== 'all') params.is_hidden = is_hidden
+      if (is_special_offer && is_special_offer !== 'all') {
+        params.is_special_offer = is_special_offer
+      }
 
       const { data } = await api.get('/coupons', { params })
       return data.data.coupons
@@ -72,6 +78,38 @@ export const toggleCouponVisibilityThunk = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update coupon visibility.'
+      )
+    }
+  }
+)
+
+export const toggleCouponSpecialOfferThunk = createAsyncThunk(
+  'coupons/toggleSpecialOffer',
+  async ({ id, is_special_offer }, { rejectWithValue }) => {
+    try {
+      const payload =
+        typeof is_special_offer === 'boolean' ? { is_special_offer } : {}
+      const { data } = await api.patch(`/coupons/${id}/special-offer`, payload)
+      return data.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          'Failed to update coupon special offer status.'
+      )
+    }
+  }
+)
+
+export const fetchActiveSpecialOfferThunk = createAsyncThunk(
+  'coupons/fetchActiveSpecialOffer',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get('/coupons/special-offer')
+      return data.data?.special_offer || null
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          'Failed to retrieve active special offer.'
       )
     }
   }
