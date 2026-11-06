@@ -15,6 +15,8 @@ import { QuestionPacksPage } from '@/pages/QuestionPacksPage'
 import { ReportPacksPage } from '@/pages/ReportPacksPage'
 import { BlogsPage } from '@/pages/BlogsPage'
 import { BlogEditorPage } from '@/pages/BlogEditorPage'
+import { DoshasPage } from '@/pages/DoshasPage'
+import { DoshaEditorPage } from '@/pages/DoshaEditorPage'
 import { FaqsPage } from '@/pages/FaqsPage'
 import { LegalPagesPage } from '@/pages/LegalPagesPage'
 import { ChatsPage } from '@/pages/ChatsPage'
@@ -113,6 +115,30 @@ export default function App() {
                 element={
                   <ProtectedRoute permission="blogs:write">
                     <BlogEditorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="doshas"
+                element={
+                  <ProtectedRoute permission="doshas:read">
+                    <DoshasPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="doshas/new"
+                element={
+                  <ProtectedRoute permission="doshas:write">
+                    <DoshaEditorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="doshas/edit/:id"
+                element={
+                  <ProtectedRoute permission="doshas:write">
+                    <DoshaEditorPage />
                   </ProtectedRoute>
                 }
               />

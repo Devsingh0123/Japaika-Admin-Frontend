@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { uploadFileApi } from '@/features/uploads/uploadsApi'
 import { toast } from 'sonner'
 
-export function CoverImageUpload({ value, onChange }) {
+export function CoverImageUpload({ value, onChange, folder = 'japaika/blogs' }) {
   const [isUrlMode, setIsUrlMode] = useState(false)
   const [urlInput, setUrlInput] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -29,7 +29,7 @@ export function CoverImageUpload({ value, onChange }) {
     const toastId = toast.loading('Uploading cover image to Cloudinary...')
 
     try {
-      const uploadedFile = await uploadFileApi(file, 'japaika/blogs')
+      const uploadedFile = await uploadFileApi(file, folder)
       const secureUrl = uploadedFile?.secure_url || uploadedFile?.url
 
       if (secureUrl && onChange) {

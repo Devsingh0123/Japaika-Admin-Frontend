@@ -12,6 +12,7 @@ import chatsReducer from '@/features/chats/chatsSlice'
 import adminsReducer from '@/features/admins/adminsSlice'
 import faqsReducer from '@/features/faqs/faqsSlice'
 import legalPagesReducer from '@/features/legalPages/legalPagesSlice'
+import doshasReducer from '@/features/doshas/doshasSlice'
 
 export const store = configureStore({
   reducer: {
@@ -28,5 +29,6 @@ export const store = configureStore({
     admins: adminsReducer,
     faqs: faqsReducer,
     legalPages: legalPagesReducer,
+    doshas: doshasReducer,
   },
 })

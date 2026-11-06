@@ -18,6 +18,7 @@ export const PERMISSION_MODULES = [
   { key: 'question_packs', label: 'Question Packs', actions: ['read', 'write'] },
   { key: 'report_packs', label: 'Report Packs', actions: ['read', 'write'] },
   { key: 'blogs', label: 'Blogs', actions: ['read', 'write'] },
+  { key: 'doshas', label: 'Vedic Doshas', actions: ['read', 'write'] },
   { key: 'faqs', label: 'FAQs', actions: ['read', 'write'] },
   { key: 'legal_pages', label: 'Legal Pages', actions: ['read', 'write'] },
   { key: 'chats', label: 'AI Chats', actions: ['read'] },
@@ -66,6 +67,12 @@ export const NAV_ITEMS = [
     path: '/blogs',
     icon: 'BookOpen',
     permission: 'blogs:read',
+  },
+  {
+    title: 'Vedic Doshas',
+    path: '/doshas',
+    icon: 'Sparkles',
+    permission: 'doshas:read',
   },
   {
     title: 'FAQs',
@@ -127,3 +134,49 @@ export function hasPermission(admin, requiredPerm) {
 
   return false
 }
+
+export const DOSHA_CATEGORIES = [
+  { id: 'marriage', label: 'Marriage & Relationship' },
+  { id: 'planetary', label: 'Planetary Combinations' },
+  { id: 'karmic', label: 'Karmic & Ancestral' },
+  { id: 'nakshatra', label: 'Nakshatra & Birth Star' },
+  { id: 'general', label: 'General Afflictions' },
+]
+
+export const DOSHA_SEVERITIES = [
+  { id: 'low', label: 'Low', badgeColor: 'border-slate-400/40 text-slate-700 dark:text-slate-300 bg-slate-500/10' },
+  { id: 'medium', label: 'Medium', badgeColor: 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10' },
+  { id: 'high', label: 'High', badgeColor: 'border-orange-500/40 text-orange-600 dark:text-orange-400 bg-orange-500/10' },
+  { id: 'severe', label: 'Severe', badgeColor: 'border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-500/10' },
+]
+
+export const DOSHA_STATUSES = [
+  { id: 'draft', label: 'Draft' },
+  { id: 'published', label: 'Published' },
+  { id: 'archived', label: 'Archived' },
+]
+
+export const ALL_PLANETS = [
+  'Sun',
+  'Moon',
+  'Mars',
+  'Mercury',
+  'Jupiter',
+  'Venus',
+  'Saturn',
+  'Rahu',
+  'Ketu',
+]
+
+export const ALL_HOUSES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+export const REMEDY_TYPES = [
+  { id: 'mantra', label: 'Mantra Recitation' },
+  { id: 'puja', label: 'Puja & Vedic Ritual' },
+  { id: 'gemstone', label: 'Gemstone & Ratna' },
+  { id: 'donation', label: 'Charity & Daan' },
+  { id: 'fasting', label: 'Fasting & Vrat' },
+  { id: 'deity', label: 'Deity Worship' },
+  { id: 'rudraksha', label: 'Rudraksha' },
+  { id: 'lifestyle', label: 'Lifestyle & Guidance' },
+]

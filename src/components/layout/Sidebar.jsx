@@ -16,6 +16,7 @@ import {
   Settings,
   HelpCircle,
   Scale,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, hasPermission } from '@/lib/constants'
@@ -33,6 +34,7 @@ const ICON_MAP = {
   BookOpen,
   HelpCircle,
   Scale,
+  Sparkles,
   MessageSquare,
   ShieldCheck,
   Settings,
