@@ -160,9 +160,15 @@ export function RefundOrderDialog({ open, onOpenChange, order, onSuccess }) {
                 <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 font-medium">
                   <span className="flex items-center gap-1">
                     <Coins className="w-3.5 h-3.5" />
-                    Credits to Reclaim:
+                    {order.product_type === 'report_pack'
+                      ? 'Report Credits to Reclaim:'
+                      : 'Question Credits to Reclaim:'}
                   </span>
-                  <span>-{order.credits_to_grant} Credits</span>
+                  <span>
+                    -{order.credits_to_grant}{' '}
+                    {order.product_type === 'report_pack' ? 'Report' : 'Question'} Credit
+                    {Number(order.credits_to_grant) === 1 ? '' : 's'}
+                  </span>
                 </div>
               )}
               {order.razorpay_payment_id && (

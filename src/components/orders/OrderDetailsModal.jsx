@@ -202,13 +202,24 @@ export function OrderDetailsModal({ open, onOpenChange }) {
                     <p className="text-sm font-medium text-foreground truncate">
                       {selectedOrder.user?.email || selectedOrder.user_id}
                     </p>
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
                       <Badge variant="outline" className="text-xs uppercase font-mono">
                         Tier: {selectedOrder.user?.tier || 'Free'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        Bal: <strong className="text-foreground">{selectedOrder.user?.credit_balance ?? 0}</strong>
+                        Question Credits:{' '}
+                        <strong className="text-foreground">
+                          {selectedOrder.user?.credit_balance ?? 0}
+                        </strong>
                       </span>
+                      {selectedOrder.user?.report_credits !== undefined && (
+                        <span className="text-xs text-muted-foreground">
+                          • Report Credits:{' '}
+                          <strong className="text-foreground">
+                            {selectedOrder.user.report_credits}
+                          </strong>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -224,7 +235,15 @@ export function OrderDetailsModal({ open, onOpenChange }) {
                       {selectedOrder.item_title || selectedOrder.product_code}
                     </p>
                     <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
-                      <span>Credits: <strong className="text-foreground">+{selectedOrder.credits_to_grant ?? 0}</strong></span>
+                      <span>
+                        {selectedOrder.product_type === 'report_pack'
+                          ? 'Report Credits'
+                          : 'Question Credits'}
+                        :{' '}
+                        <strong className="text-foreground">
+                          +{selectedOrder.credits_to_grant ?? 0}
+                        </strong>
+                      </span>
                       <span className="text-muted-foreground">•</span>
                       <span className={selectedOrder.is_credited ? 'text-emerald-500 font-medium' : 'text-amber-500'}>
                         {selectedOrder.is_credited ? 'Credited' : 'Uncredited'}

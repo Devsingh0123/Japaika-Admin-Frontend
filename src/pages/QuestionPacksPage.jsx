@@ -334,7 +334,7 @@ export function QuestionPacksPage() {
                 Pack Details
               </TableHead>
               <TableHead className="font-semibold text-xs text-foreground uppercase tracking-wider">
-                Credits
+                Question Credits
               </TableHead>
               <TableHead className="font-semibold text-xs text-foreground uppercase tracking-wider">
                 Tier Access
@@ -458,14 +458,16 @@ export function QuestionPacksPage() {
                       </div>
                     </TableCell>
 
-                    {/* Credits */}
+                    {/* Question Credits */}
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <Coins className="w-3.5 h-3.5 text-amber-500" />
                         <span className="font-semibold text-sm text-foreground">
                           +{pack.credits}
                         </span>
-                        <span className="text-xs text-muted-foreground">Credits</span>
+                        <span className="text-xs text-muted-foreground">
+                          Question Credit{Number(pack.credits) === 1 ? '' : 's'}
+                        </span>
                       </div>
                     </TableCell>
 

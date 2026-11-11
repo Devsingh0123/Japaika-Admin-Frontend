@@ -471,7 +471,9 @@ export function OrdersPage() {
                         </span>
                         {order.credits_to_grant && (
                           <span className="text-xs text-primary font-medium">
-                            +{order.credits_to_grant} Credits
+                            +{order.credits_to_grant}{' '}
+                            {order.product_type === 'report_pack' ? 'Report' : 'Question'} Credit
+                            {Number(order.credits_to_grant) === 1 ? '' : 's'}
                           </span>
                         )}
                       </div>

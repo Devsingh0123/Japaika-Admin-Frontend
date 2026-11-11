@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchUsersThunk,
@@ -52,9 +52,14 @@ function formatRegistrationDate(dateValue) {
 
 export function UsersPage() {
   const dispatch = useDispatch()
-  const { users, pagination, loadingList, updatingStatusId, exportingCsv } = useSelector(
-    (state) => state.users
-  )
+  const {
+    users,
+    selectedUser,
+    pagination,
+    loadingList,
+    updatingStatusId,
+    exportingCsv,
+  } = useSelector((state) => state.users)
 
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -62,7 +67,17 @@ export function UsersPage() {
   const [limit, setLimit] = useState(20)
   const [modalOpen, setModalOpen] = useState(false)
   const [creditsModalOpen, setCreditsModalOpen] = useState(false)
-  const [userForCredits, setUserForCredits] = useState(null)
+  const [creditsModalUserId, setCreditsModalUserId] = useState(null)
+  const [creditsModalFallbackUser, setCreditsModalFallbackUser] = useState(null)
+  const [creditsModalType, setCreditsModalType] = useState('questions')
+
+  const userForCredits = useMemo(() => {
+    if (!creditsModalUserId) return null
+    const fromList = users.find((u) => u.id === creditsModalUserId)
+    if (fromList) return fromList
+    if (selectedUser && selectedUser.id === creditsModalUserId) return selectedUser
+    return creditsModalFallbackUser
+  }, [creditsModalUserId, users, selectedUser, creditsModalFallbackUser])
 
   // Debounce search input by 400ms
   useEffect(() => {
@@ -70,7 +85,7 @@ export function UsersPage() {
       setDebouncedSearch(searchInput)
       setPage(1) // Reset to page 1 on new search
     }, 400)
-    return () => clearInterval(timer)
+    return () => clearTimeout(timer)
   }, [searchInput])
 
   const loadUsers = useCallback(() => {
@@ -86,8 +101,10 @@ export function UsersPage() {
     setModalOpen(true)
   }
 
-  const handleOpenAdjustCredits = (user) => {
-    setUserForCredits(user)
+  const handleOpenAdjustCredits = (user, initialType = 'questions') => {
+    setCreditsModalUserId(user.id)
+    setCreditsModalFallbackUser(user)
+    setCreditsModalType(initialType === 'reports' ? 'reports' : 'questions')
     setCreditsModalOpen(true)
   }
 
@@ -245,7 +262,7 @@ export function UsersPage() {
             <TableRow className="border-b border-border">
               <TableHead className="font-semibold text-xs">User / Email</TableHead>
               <TableHead className="font-semibold text-xs">Tier & Role</TableHead>
-              <TableHead className="font-semibold text-xs">Credits</TableHead>
+              <TableHead className="font-semibold text-xs">Credit Balances</TableHead>
               <TableHead className="font-semibold text-xs">Onboarding</TableHead>
               <TableHead className="font-semibold text-xs">Joined</TableHead>
               <TableHead className="font-semibold text-xs text-center">Status</TableHead>
@@ -334,19 +351,30 @@ export function UsersPage() {
                       </div>
                     </TableCell>
 
-                    {/* Credits */}
+                    {/* Credit Balances (Question Credits & Report Credits) */}
                     <TableCell className="py-3.5">
-                      <div className="space-y-0.5 text-xs">
-                        <div className="flex items-center gap-1 text-foreground">
-                          <Sparkles className="size-3 text-primary" />
-                          <span className="font-mono font-medium">{u.credit_balance ?? 0}</span>
-                          <span className="text-[10px] text-muted-foreground">questions</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
-                          <FileText className="size-3" />
-                          <span className="font-mono">{u.report_credits ?? 0}</span>
-                          <span className="text-[10px]">reports</span>
-                        </div>
+                      <div className="flex flex-col items-start gap-1 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAdjustCredits(u, 'questions')}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10"
+                          title="Click to adjust Question Credits (credit_balance)"
+                        >
+                          <Sparkles className="size-3 text-primary shrink-0" />
+                          <span className="font-mono font-semibold">{u.credit_balance ?? 0}</span>
+                          <span className="text-[11px] text-muted-foreground">Question Credits</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAdjustCredits(u, 'reports')}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-sky-500/20 bg-sky-500/5 px-2 py-0.5 text-foreground transition-colors hover:border-sky-500/40 hover:bg-sky-500/10"
+                          title="Click to adjust Report Credits (report_credits)"
+                        >
+                          <FileText className="size-3 text-sky-500 shrink-0" />
+                          <span className="font-mono font-semibold">{u.report_credits ?? 0}</span>
+                          <span className="text-[11px] text-muted-foreground">Report Credits</span>
+                        </button>
                       </div>
                     </TableCell>
 
@@ -410,12 +438,23 @@ export function UsersPage() {
                         <Button
                           variant="outline"
                           size="xs"
-                          onClick={() => handleOpenAdjustCredits(u)}
+                          onClick={() => handleOpenAdjustCredits(u, 'questions')}
                           className="gap-1 text-xs hover:border-primary/50 hover:text-primary"
-                          title="Adjust Jyotish or Report Credits"
+                          title="Manage Question Credits (credit_balance)"
                         >
                           <Sparkles className="size-3 text-primary" />
-                          <span>Credits</span>
+                          <span>Question</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => handleOpenAdjustCredits(u, 'reports')}
+                          className="gap-1 text-xs hover:border-sky-500/50 hover:text-sky-600 dark:hover:text-sky-400"
+                          title="Manage Report Credits (report_credits)"
+                        >
+                          <FileText className="size-3 text-sky-500" />
+                          <span>Report</span>
                         </Button>
 
                         <Button
@@ -500,6 +539,7 @@ export function UsersPage() {
         open={creditsModalOpen}
         onOpenChange={setCreditsModalOpen}
         user={userForCredits}
+        initialCreditType={creditsModalType}
       />
     </div>
   )

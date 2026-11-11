@@ -18,6 +18,7 @@ const usersSlice = createSlice({
       totalPages: 1,
     },
     selectedUser: null,
+    lastAdjustment: null,
     loadingList: false,
     loadingDetails: false,
     updatingStatusId: null,
@@ -96,6 +97,14 @@ const usersSlice = createSlice({
         state.adjustingCredits = false
         const updated = action.payload
         if (updated?.id) {
+          if (updated.adjustment) {
+            state.lastAdjustment = {
+              userId: updated.id,
+              email: updated.email,
+              ...updated.adjustment,
+              timestamp: new Date().toISOString(),
+            }
+          }
           state.users = state.users.map((u) =>
             u.id === updated.id
               ? {

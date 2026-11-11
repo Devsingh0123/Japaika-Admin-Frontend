@@ -187,12 +187,12 @@ export function ChatThreadDetailsModal({ open, onOpenChange, thread, loading }) 
                 <div className="flex items-center gap-4 text-muted-foreground">
                   <span className="flex items-center gap-1 font-mono">
                     <Coins className="size-3 text-primary" />
-                    <span>Balance:</span>
-                    <strong className="text-foreground">{thread.user.credit_balance ?? 0}</strong> Q
+                    <span>Question Credits:</span>
+                    <strong className="text-foreground">{thread.user.credit_balance ?? 0}</strong>
                   </span>
                   <span className="flex items-center gap-1 font-mono">
                     <Shield className="size-3 text-sky-500" />
-                    <span>Reports:</span>
+                    <span>Report Credits:</span>
                     <strong className="text-foreground">{thread.user.report_credits ?? 0}</strong>
                   </span>
                 </div>

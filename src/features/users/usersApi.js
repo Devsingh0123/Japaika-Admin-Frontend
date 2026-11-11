@@ -54,18 +54,60 @@ export const updateUserStatusThunk = createAsyncThunk(
 )
 
 /**
- * Adjust user credits (questions or reports: add, deduct, set)
+ * Adjust user credits (Question Credits `credit_balance` or Report Credits `report_credits`: add, deduct, set)
+ * Also supports direct shorthand payloads (`credit_balance`, `report_credits`, `report_credit`).
  */
 export const adjustUserCreditsThunk = createAsyncThunk(
   'users/adjustUserCredits',
-  async ({ id, credit_type, action, amount, reason }, { rejectWithValue }) => {
+  async (
+    {
+      id,
+      credit_type,
+      action,
+      amount,
+      reason,
+      credit_balance,
+      report_credits,
+      report_credit,
+    },
+    { rejectWithValue }
+  ) => {
     try {
-      const { data } = await api.patch(`/users/${id}/credits`, {
-        credit_type,
-        action,
-        amount: Number(amount),
-        reason: reason?.trim() || undefined,
-      })
+      const trimmedReason = reason?.trim() || undefined
+      let payload
+
+      if (credit_type !== undefined) {
+        payload = {
+          credit_type,
+          action,
+          amount: Number(amount),
+          reason: trimmedReason,
+        }
+      } else if (report_credit !== undefined) {
+        payload = {
+          report_credit: Number(report_credit),
+          reason: trimmedReason,
+        }
+      } else if (report_credits !== undefined) {
+        payload = {
+          report_credits: Number(report_credits),
+          reason: trimmedReason,
+        }
+      } else if (credit_balance !== undefined) {
+        payload = {
+          credit_balance: Number(credit_balance),
+          reason: trimmedReason,
+        }
+      } else {
+        payload = {
+          credit_type: 'questions',
+          action: action || 'add',
+          amount: Number(amount),
+          reason: trimmedReason,
+        }
+      }
+
+      const { data } = await api.patch(`/users/${id}/credits`, payload)
       return data?.data?.user || data?.data || data
     } catch (error) {
       return rejectWithValue(

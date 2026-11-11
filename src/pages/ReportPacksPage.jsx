@@ -516,7 +516,9 @@ export function ReportPacksPage() {
                       <TableCell>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
                           <FileText className="size-3.5" />
-                          <span>+{pack.credits} Report{Number(pack.credits) > 1 ? 's' : ''}</span>
+                          <span>
+                            +{pack.credits} Report Credit{Number(pack.credits) === 1 ? '' : 's'}
+                          </span>
                         </div>
                       </TableCell>
 
