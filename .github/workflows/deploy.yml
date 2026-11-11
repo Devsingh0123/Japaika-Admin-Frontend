@@ -30,4 +30,3 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: /admin-frontend-japaika/
-          dangerous-clean-slate: true
