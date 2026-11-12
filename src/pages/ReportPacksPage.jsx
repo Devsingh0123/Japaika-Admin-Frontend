@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchReportPacksThunk,
@@ -16,8 +16,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ReportPackModal } from '@/components/reportPacks/ReportPackModal'
 import { DeleteReportPackDialog } from '@/components/reportPacks/DeleteReportPackDialog'
+
+const ReportPackModal = lazy(() =>
+  import('@/components/reportPacks/ReportPackModal').then((m) => ({
+    default: m.ReportPackModal,
+  }))
+)
 import {
   FileText,
   Plus,
@@ -611,11 +616,15 @@ export function ReportPacksPage() {
       </div>
 
       {/* Create & Edit Modal */}
-      <ReportPackModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        packToEdit={packToEdit}
-      />
+      {isModalOpen && (
+        <Suspense fallback={null}>
+          <ReportPackModal
+            open={isModalOpen}
+            onOpenChange={setIsModalOpen}
+            packToEdit={packToEdit}
+          />
+        </Suspense>
+      )}
 
       {/* Soft Delete Dialog */}
       <DeleteReportPackDialog

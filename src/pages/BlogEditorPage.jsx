@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -7,9 +7,14 @@ import {
   updateBlogThunk,
 } from '@/features/blogs/blogsApi'
 import { clearCurrentBlog } from '@/features/blogs/blogsSlice'
-import { BlogEditor } from '@/components/blogs/BlogEditor'
 import { CoverImageUpload } from '@/components/blogs/CoverImageUpload'
 import { DeleteBlogDialog } from '@/components/blogs/DeleteBlogDialog'
+
+const BlogEditor = lazy(() =>
+  import('@/components/blogs/BlogEditor').then((m) => ({
+    default: m.BlogEditor,
+  }))
+)
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -372,7 +377,16 @@ export function BlogEditorPage() {
               </div>
             </div>
 
-            <BlogEditor content={content} onChange={handleContentChange} />
+            <Suspense
+              fallback={
+                <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-border/60 bg-card/40 text-xs text-muted-foreground gap-2">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Loading rich text editor...</span>
+                </div>
+              }
+            >
+              <BlogEditor content={content} onChange={handleContentChange} />
+            </Suspense>
           </div>
         </div>
 

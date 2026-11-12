@@ -14,4 +14,21 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react-is', 'recharts'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (
+            id.includes('lucide-react') ||
+            id.includes('@base-ui') ||
+            id.includes('sonner')
+          ) {
+            return 'vendor-ui'
+          }
+          return undefined
+        },
+      },
+    },
+  },
 })

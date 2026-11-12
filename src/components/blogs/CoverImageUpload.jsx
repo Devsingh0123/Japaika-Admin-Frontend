@@ -91,6 +91,8 @@ export function CoverImageUpload({ value, onChange, folder = 'japaika/blogs' }) 
           <img
             src={value}
             alt="Cover preview"
+            loading="lazy"
+            decoding="async"
             className="w-full h-[220px] object-cover transition-transform duration-300 group-hover:scale-102"
             onError={(e) => {
               e.currentTarget.src =

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchPacksThunk,
@@ -17,8 +17,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PackModal } from '@/components/packs/PackModal'
 import { DeletePackDialog } from '@/components/packs/DeletePackDialog'
+
+const PackModal = lazy(() =>
+  import('@/components/packs/PackModal').then((m) => ({
+    default: m.PackModal,
+  }))
+)
 import {
   Package,
   Plus,
@@ -567,11 +572,15 @@ export function QuestionPacksPage() {
       </div>
 
       {/* Create / Edit Modal */}
-      <PackModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        packToEdit={packToEdit}
-      />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <PackModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            packToEdit={packToEdit}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <DeletePackDialog

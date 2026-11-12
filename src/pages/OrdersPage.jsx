@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchOrdersThunk,
@@ -17,8 +17,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { OrderDetailsModal } from '@/components/orders/OrderDetailsModal'
 import { RefundOrderDialog } from '@/components/orders/RefundOrderDialog'
+
+const OrderDetailsModal = lazy(() =>
+  import('@/components/orders/OrderDetailsModal').then((m) => ({
+    default: m.OrderDetailsModal,
+  }))
+)
 import {
   Search,
   RefreshCw,
@@ -595,7 +600,11 @@ export function OrdersPage() {
       </div>
 
       {/* Order Details & GST Breakdown Modal */}
-      <OrderDetailsModal open={modalOpen} onOpenChange={setModalOpen} />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <OrderDetailsModal open={modalOpen} onOpenChange={setModalOpen} />
+        </Suspense>
+      )}
 
       {/* Refund Confirmation Dialog */}
       <RefundOrderDialog

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchLegalPagesThunk,
@@ -11,7 +11,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BlogEditor } from '@/components/blogs/BlogEditor'
+
+const BlogEditor = lazy(() =>
+  import('@/components/blogs/BlogEditor').then((m) => ({
+    default: m.BlogEditor,
+  }))
+)
 import {
   Scale,
   ShieldCheck,
@@ -345,7 +350,16 @@ function LegalPolicyEditor({ policy, definition, isSaving, onSave }) {
 
           {/* Active Editor Tab Surface */}
           {editorMode === 'visual' && (
-            <BlogEditor content={content} onChange={setContent} />
+            <Suspense
+              fallback={
+                <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-border/60 bg-card/40 text-xs text-muted-foreground gap-2">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Loading rich text editor...</span>
+                </div>
+              }
+            >
+              <BlogEditor content={content} onChange={setContent} />
+            </Suspense>
           )}
 
           {editorMode === 'preview' && (

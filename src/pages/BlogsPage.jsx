@@ -392,6 +392,8 @@ export function BlogsPage() {
                             <img
                               src={blog.featured_image}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="size-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none'

@@ -1,28 +1,76 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { useDispatch } from 'react-redux'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { fetchAdminMeThunk } from '@/features/auth/authApi'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { LoginPage } from '@/pages/LoginPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { UsersPage } from '@/pages/UsersPage'
-import { OrdersPage } from '@/pages/OrdersPage'
-import { CouponsPage } from '@/pages/CouponsPage'
-import { QuestionPacksPage } from '@/pages/QuestionPacksPage'
-import { ReportPacksPage } from '@/pages/ReportPacksPage'
-import { BlogsPage } from '@/pages/BlogsPage'
-import { BlogEditorPage } from '@/pages/BlogEditorPage'
-import { DoshasPage } from '@/pages/DoshasPage'
-import { DoshaEditorPage } from '@/pages/DoshaEditorPage'
-import { FaqsPage } from '@/pages/FaqsPage'
-import { LegalPagesPage } from '@/pages/LegalPagesPage'
-import { ChatsPage } from '@/pages/ChatsPage'
-import { AdminsPage } from '@/pages/AdminsPage'
-import { SettingsPage } from '@/pages/SettingsPage'
-import { NotFoundPage } from '@/pages/NotFoundPage'
+
+const DashboardPage = lazy(() =>
+  import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
+)
+const UsersPage = lazy(() =>
+  import('@/pages/UsersPage').then((m) => ({ default: m.UsersPage }))
+)
+const OrdersPage = lazy(() =>
+  import('@/pages/OrdersPage').then((m) => ({ default: m.OrdersPage }))
+)
+const CouponsPage = lazy(() =>
+  import('@/pages/CouponsPage').then((m) => ({ default: m.CouponsPage }))
+)
+const QuestionPacksPage = lazy(() =>
+  import('@/pages/QuestionPacksPage').then((m) => ({
+    default: m.QuestionPacksPage,
+  }))
+)
+const ReportPacksPage = lazy(() =>
+  import('@/pages/ReportPacksPage').then((m) => ({
+    default: m.ReportPacksPage,
+  }))
+)
+const BlogsPage = lazy(() =>
+  import('@/pages/BlogsPage').then((m) => ({ default: m.BlogsPage }))
+)
+const BlogEditorPage = lazy(() =>
+  import('@/pages/BlogEditorPage').then((m) => ({ default: m.BlogEditorPage }))
+)
+const DoshasPage = lazy(() =>
+  import('@/pages/DoshasPage').then((m) => ({ default: m.DoshasPage }))
+)
+const DoshaEditorPage = lazy(() =>
+  import('@/pages/DoshaEditorPage').then((m) => ({
+    default: m.DoshaEditorPage,
+  }))
+)
+const FaqsPage = lazy(() =>
+  import('@/pages/FaqsPage').then((m) => ({ default: m.FaqsPage }))
+)
+const LegalPagesPage = lazy(() =>
+  import('@/pages/LegalPagesPage').then((m) => ({ default: m.LegalPagesPage }))
+)
+const ChatsPage = lazy(() =>
+  import('@/pages/ChatsPage').then((m) => ({ default: m.ChatsPage }))
+)
+const AdminsPage = lazy(() =>
+  import('@/pages/AdminsPage').then((m) => ({ default: m.AdminsPage }))
+)
+const SettingsPage = lazy(() =>
+  import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))
+)
+const NotFoundPage = lazy(() =>
+  import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
+)
+
+function FullScreenFallback() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background text-muted-foreground">
+      <Loader2 className="size-8 animate-spin text-primary" />
+    </div>
+  )
+}
 
 export default function App() {
   const dispatch = useDispatch()
@@ -35,7 +83,8 @@ export default function App() {
     <>
       <ErrorBoundary standalone>
         <BrowserRouter>
-          <Routes>
+          <Suspense fallback={<FullScreenFallback />}>
+            <Routes>
             <Route path="/login" element={<LoginPage />} />
 
             <Route
@@ -181,6 +230,7 @@ export default function App() {
             <Route path="/404" element={<NotFoundPage standalone />} />
             <Route path="*" element={<NotFoundPage standalone />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </ErrorBoundary>
       <Toaster position="top-right" richColors closeButton />

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   fetchCouponsThunk,
@@ -20,8 +20,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CreateCouponModal } from '@/components/coupons/CreateCouponModal'
 import { DeleteCouponDialog } from '@/components/coupons/DeleteCouponDialog'
+
+const CreateCouponModal = lazy(() =>
+  import('@/components/coupons/CreateCouponModal').then((m) => ({
+    default: m.CreateCouponModal,
+  }))
+)
 import { parseArray } from '@/lib/constants'
 import {
   Tag,
@@ -770,12 +775,16 @@ export function CouponsPage() {
       </div>
 
       {/* Create / Edit Coupon Modal Form */}
-      <CreateCouponModal
-        key={couponToEdit?.id || `create-${createModalOpen}`}
-        open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
-        couponToEdit={couponToEdit}
-      />
+      {createModalOpen && (
+        <Suspense fallback={null}>
+          <CreateCouponModal
+            key={couponToEdit?.id || `create-${createModalOpen}`}
+            open={createModalOpen}
+            onOpenChange={setCreateModalOpen}
+            couponToEdit={couponToEdit}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Coupon Confirmation Dialog */}
       <DeleteCouponDialog
